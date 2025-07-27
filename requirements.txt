@@ -1,5 +1,5 @@
 Flask
-BeautifulSoup
+beautifulsoup4
 Tag
 Response
 requests
