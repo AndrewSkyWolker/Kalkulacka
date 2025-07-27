@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalorické Tabulky - Studijní Vyhledávač</title>
+    <style>
+        body {
+            font-family: 'Dutch801 Rm BT', serif; /* Změna písma na Dutch801 Rm BT */
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        form { display: flex; justify-content: center; margin-bottom: 20px; }
+        input[type="text"] { padding: 10px; width: 60%; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px; }
+        button:hover { background-color: #0056b3; }
+        #results { margin-top: 20px; }
+        .food-item {
+            background-color: #e9e9e9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .food-item:hover {
+            background-color: #e0e0e0;
+        }
+        .food-item h3 { margin: 0 0 5px 0; color: #007bff; }
+        .food-item p { margin: 0; font-size: 0.9em; color: #555; }
+        .food-item img {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .food-details {
+            flex-grow: 1;
+        }
+        #loading { display: none; text-align: center; color: #888; }
+        .error { color: red; text-align: center; margin-top: 10px; }
+        .warning { color: orange; text-align: center; margin-top: 10px; font-size: 0.9em; }
+
+        /* Styly pro modální okno */
+        .modal-overlay {
+            display: none; /* Skryté ve výchozím stavu */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px; /* Ponecháno 20px pro vnitřní odsazení obsahu */
+            border: 1px solid #888;
+            width: 80%; /* Původní šířka */
+            max-width: 350px; /* Zúžení o cca 1/3 z 500px */
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .close-button {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 3px; /* Posunuto nahoru o 7px (z 10px na 3px) */
+            right: 13px; /* Posunuto doprava o 7px (z 20px na 13px) */
+            cursor: pointer;
+            padding: 0; /* Zajištění, že aktivní oblast odpovídá vizuálnímu křížku */
+            line-height: 1; /* Zajištění, že aktivní oblast odpovídá vizuálnímu křížku */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-details {
+            font-size: 0.95em;
+        }
+        .modal-details h3 {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .modal-details p {
+            margin-bottom: 3px;
+        }
+        .modal-details strong {
+            color: #333;
+        }
+        .modal-details .loading-details, .modal-details .error-details {
+            text-align: center;
+            color: #888;
+            margin-top: 10px;
+        }
+        .modal-details .error-details {
+            color: red;
+        }
+
+        /* Styly pro zobrazení jako na obrázku */
+        .nutrient-section {
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .nutrient-section:last-child {
+            border-bottom: none;
+        }
+        .nutrient-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+        .nutrient-label {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            /* Barva bude nastavena inline pomocí JS */
+        }
+        .nutrient-label.main {
+            font-size: 1.2em; /* Zvětšená velikost písma */
+        }
+        .nutrient-value {
+            font-weight: bold;
+            /* Barva bude nastavena inline pomocí JS */
+        }
+        .nutrient-value.main-value {
+            font-size: 1.2em; /* Zvětšená velikost písma */
+        }
+        .nutrient-sub-label {
+            margin-left: 20px; /* Odsazení pro podkategorie */
+            font-size: 0.9em;
+            color: #555;
+        }
+        .nutrient-sub-value {
+             font-size: 0.9em;
+             color: #555;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .dot.red { background-color: #f44336; }
+        .dot.blue { background-color: #2196f3; }
+        .dot.orange { background-color: #ff9800; }
+        .dot.green { background-color: #4caf50; } /* Pro Vlákninu */
+
+        .energy-header {
+            text-align: right; /* Zarovnání k pravému okraji */
+            font-size: 2.1em; /* Zvětšená velikost písma o 3 body (z 1.8em na 2.1em) */
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .energy-sub-header {
+            text-align: right; /* Zarovnání k pravému okraji */
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 0; /* Odstraněna spodní mezera pro přesnější zarovnání */
+            white-space: nowrap; /* Zabrání rozdělení textu na více řádků */
+        }
+
+        /* Nové styly pro hlavičku detailu */
+        .modal-header-content {
+            display: flex; /* Použijeme flexbox */
+            align-items: center; /* Vertikálně vycentrujeme položky */
+            margin-bottom: 20px;
+        }
+        .modal-header-image {
+            width: 120px; /* Zvětšená velikost obrázku a čtvercový tvar */
+            height: 120px; /* Zvětšená velikost obrázku a čtvercový tvar */
+            object-fit: cover; /* Oříznutí namísto deformace */
+            margin-right: 15px;
+            border-radius: 8px; /* Zaoblené rohy, odpovídající modálnímu oknu */
+            flex-shrink: 0; /* Zabrání zmenšování obrázku */
+        }
+        .modal-header-name {
+            flex-grow: 1; /* Povolí názvu zabrat dostupný prostor */
+            flex-shrink: 1; /* Povolí názvu se zmenšit, pokud je potřeba */
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            line-height: 1.2;
+            overflow: hidden; /* Skryje přetečení textu */
+            display: flex; /* Použijeme flexbox pro vertikální centrování textu uvnitř divu */
+            align-items: center; /* Vertikálně vycentruje text */
+            justify-content: center; /* Horizontálně vycentruje text */
+            height: 120px; /* Omezí výšku na výšku obrázku */
+        }
+
+        /* Nový kontejner pro interaktivní sekci (jednotka a kalorie/kJ) */
+        .interactive-section {
+            display: flex;
+            justify-content: flex-end; /* Zarovná položky doprava */
+            align-items: flex-end; /* Zarovná položky dole */
+            margin-bottom: 15px;
+            padding-left: 0; /* Zrušeno odsazení */
+            padding-right: 5px; /* Změněno na 5px odsazení od pravého okraje */
+        }
+
+        /* Styly pro energetické hodnoty */
+        .energy-display-group {
+            flex-grow: 1; /* Povolí zabrat zbývající prostor */
+            text-align: right; /* Zarovnání obsahu doprava */
+            display: flex; /* Povolí flexbox pro zarovnání obsahu */
+            flex-direction: column; /* Položky pod sebou */
+            justify-content: flex-end; /* Zarovná obsah na konec (dole) */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Studijní Vyhledávač Potravin (Kalorické Tabulky)</h1>
+        <p>
+            <strong>Upozornění:</strong> Tato aplikace je určena pouze pro studijní účely a demonstruje principy web scrapingu/API volání.
+            Nepoužívá oficiální dokumentované API Kalorických Tabulek. Data jsou omezena na název a kalorie, protože tato URL neposkytuje detailní nutriční hodnoty.
+            Používání takových metod může být v rozporu s podmínkami použití webu. Buďte opatrní a respektujte pravidla.
+        </p>
+
+        <form id="searchForm">
+            <input type="text" id="query" name="query" placeholder="Zadejte název potraviny (např. jablko, kuře)">
+            <button type="submit">Vyhledat</button>
+        </form>
+
+        <div id="loading">Vyhledávám...</div>
+        <div id="error-message" class="error"></div>
+        <div id="results">
+            <!-- Zde se budou zobrazovat výsledky -->
+        </div>
+    </div>
+
+    <!-- Modální okno pro detaily -->
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="modalDetailsContent" class="modal-details">
+                <p class="loading-details">Načítám detaily...</p>
+                <!-- Zde se načtou detaily -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => { // Zajištění, že se skript spustí až po načtení DOM
+            document.getElementById('searchForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const query = document.getElementById('query').value;
+                const resultsDiv = document.getElementById('results');
+                const loadingDiv = document.getElementById('loading');
+                const errorDiv = document.getElementById('error-message');
+
+                resultsDiv.innerHTML = '';
+                errorDiv.innerHTML = '';
+                loadingDiv.style.display = 'block';
+
+                try {
+                    const response = await fetch('/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `query=${encodeURIComponent(query)}`
+                    });
+
+                    if (!response.ok) {
+                        loadingDiv.style.display = 'none';
+                        let errorData;
+                        try {
+                            errorData = await response.json();
+                        } catch (e) {
+                            errorData = { error: await response.text() };
+                        }
+                        errorDiv.textContent = `Chyba: ${errorData.error || response.statusText}`;
+                        return;
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            break;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            try {
+                                const item = JSON.parse(line);
+                                if (item.error) {
+                                    errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                                    loadingDiv.style.display = 'none';
+                                    return;
+                                }
+                                appendFoodItem(item);
+                            } catch (e) {
+                                console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
+                            }
+                        }
+                    }
+                    if (buffer.trim() !== '') {
+                        try {
+                            const item = JSON.parse(buffer);
+                            if (item.error) {
+                                errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                            } else {
+                                appendFoodItem(item);
+                            }
+                        } catch (e) {
+                            console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
+                        }
+                    }
+
+                    loadingDiv.style.display = 'none';
+                    if (resultsDiv.innerHTML === '') {
+                        resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
+                    }
+
+                } catch (error) {
+                    console.error('Došlo k chybě:', error);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
+                }
+            });
+
+            function appendFoodItem(item) {
+                const resultsDiv = document.getElementById('results');
+                const foodItemDiv = document.createElement('div');
+                foodItemDiv.classList.add('food-item');
+
+                if (item.slug) {
+                    foodItemDiv.dataset.slug = item.slug;
+                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url)); // Předáme i image_url
+                }
+
+                let imageHtml = '';
+                const placeholderImage = 'https://placehold.co/60x60/cccccc/333333?text=Bez+obr.';
+
+                if (item.image_url) {
+                    imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
+                } else {
+                     imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
+                }
+
+                let itemContent = `
+                    ${imageHtml}
+                    <div class="food-details">
+                        <h3>${item.name}</h3>
+                        <p><strong>Kalorie:</strong> ${item.calories}</p>
+                    </div>
+                `;
+                foodItemDiv.innerHTML = itemContent;
+                resultsDiv.appendChild(foodItemDiv);
+            }
+
+            // Logika modálního okna
+            const detailsModal = document.getElementById('detailsModal');
+            const closeButton = document.querySelector('.close-button');
+            const modalDetailsContent = document.getElementById('modalDetailsContent');
+
+            console.log("Close button element:", closeButton); // Zkontrolujeme, zda byl element nalezen
+
+            // Přidán console.log pro ladění
+            if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                    console.log("Close button clicked!");
+                    detailsModal.style.display = 'none';
+                });
+            } else {
+                console.error("Close button element not found!");
+            }
+
+
+            window.addEventListener('click', (event) => {
+                if (event.target == detailsModal) {
+                    console.log("Clicked outside modal, closing."); // Přidán console.log
+                    detailsModal.style.display = 'none';
+                }
+            });
+
+            async function showDetailsModal(slug, name, imageUrl) {
+                detailsModal.style.display = 'flex';
+                modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily...</p>`;
+
+                try {
+                    const response = await fetch('/get_details', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ slug: slug })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        modalDetailsContent.innerHTML = `<p class="error-details">Chyba při načítání detailů: ${errorData.error || response.statusText}</p>`;
+                        return;
+                    }
+
+                    const details = await response.json();
+
+                    if (details.error) {
+                        modalDetailsContent.innerHTML = `<p class="error-details">Chyba ze serveru: ${details.error}</p>`;
+                    } else {
+                        const placeholderImage = 'https://placehold.co/120x120/cccccc/333333?text=Bez+obr.';
+                        let displayImageUrl = imageUrl || placeholderImage;
+
+                        // Sestavení HTML pro zobrazení detailů jako na obrázku
+                        let detailsHtml = `
+                            <div class="modal-header-content">
+                                <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
+                                <div id="modalHeaderName" class="modal-header-name">${name}</div>
+                            </div>
+                            <div class="interactive-section">
+                                <!-- Pole pro množství a jednotky byly odstraněny -->
+                                <div class="energy-display-group">
+                                    <div class="energy-header">${details.total_kcal}</div>
+                                    <div class="energy-sub-header">Také ${details.total_kj} • Energetická hodnota</div>
+                                </div>
+                            </div>
+                        `;
+
+                        // Funkce pro generování řádků živin
+                        function createNutrientRow(label, value, rdi = null, dotColor = null, type = 'other') {
+                            let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
+                            let labelClass = 'nutrient-label';
+                            let valueClass = 'nutrient-value';
+
+                            let labelStyle = '';
+                            let valueStyle = '';
+                            let colorHex = '';
+
+                            if (dotColor) {
+                                switch (dotColor) {
+                                    case 'red': colorHex = '#f44336'; break;
+                                    case 'blue': colorHex = '#2196f3'; break;
+                                    case 'orange': colorHex = '#ff9800'; break;
+                                    case 'green': colorHex = '#4caf50'; break;
+                                    default: colorHex = '';
+                                }
+                                if (colorHex) {
+                                    labelStyle = `color: ${colorHex};`;
+                                    valueStyle = `color: ${colorHex};`;
+                                }
+                            }
+
+                            if (type === 'main') {
+                                labelClass += ' main';
+                                valueClass += ' main-value';
+                            } else if (type === 'nested') {
+                                labelClass = 'nutrient-sub-label';
+                                valueClass = 'nutrient-sub-value';
+                            }
+
+                            return `
+                                <div class="nutrient-row">
+                                    <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
+                                    <div class="${valueClass}" style="${valueStyle}">${value}</div>
+                                </div>
+                                <!-- ${rdi && rdi !== 'N/A' ? `<div class="nutrient-sub-label">Doporučený denní příjem: ${rdi}</div>` : ''} -->
+                            `;
+                        }
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Bílkoviny', details.protein, details.protein_rdi, 'red', 'main');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Sacharidy', details.carbs, details.carbs_rdi, 'blue', 'main');
+                        detailsHtml += createNutrientRow('Cukry', details.sugar, null, null, 'nested');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Tuky', details.fat, details.fat_rdi, 'orange', 'main');
+                        detailsHtml += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested');
+                        detailsHtml += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested');
+                        detailsHtml += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested');
+                        detailsHtml += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested');
+                        detailsHtml += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Vláknina', details.fiber, details.fiber_rdi, 'green', 'main');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Sůl', details.salt, null, null, 'other');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Vápník', details.calcium, null, null, 'other');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Sodík', details.sodium, null, null, 'other');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('Voda', details.water, null, null, 'other');
+                        detailsHtml += `</div>`;
+
+                        detailsHtml += `<div class="nutrient-section">`;
+                        detailsHtml += createNutrientRow('PHE', details.phe, null, null, 'other');
+                        detailsHtml += `</div>`;
+
+
+                        detailsHtml += `
+                            ${details.source_url ? `<p style="text-align: center; margin-top: 20px;"><a href="${details.source_url}" target="_blank">Zobrazit na KalorickéTabulky.cz</a></p>` : ''}
+                        `;
+                        modalDetailsContent.innerHTML = detailsHtml;
+
+                        // Dynamické nastavení velikosti písma a pozice názvu po vložení HTML
+                        const modalHeaderImage = document.getElementById('modalHeaderImage');
+                        const modalHeaderName = document.getElementById('modalHeaderName');
+
+                        if (modalHeaderImage && modalHeaderName) {
+                            const imageHeight = modalHeaderImage.offsetHeight;
+                            let currentFontSize = imageHeight * 0.25; // Inicializujeme na 25% výšky obrázku
+                            modalHeaderName.style.fontSize = `${currentFontSize}px`;
+
+                            // Iterativně zmenšujeme font-size, dokud se text nevejde
+                            // Kontrolujeme jak šířku, tak výšku
+                            while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) { // Minimální velikost písma 10px
+                                currentFontSize -= 0.5; // Zmenšujeme po 0.5px
+                                modalHeaderName.style.fontSize = `${currentFontSize}px`;
+                            }
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Chyba při získávání detailů:', error);
+                    modalDetailsContent.innerHTML = `<p class="error-details">Došlo k chybě při komunikaci se serverem pro detaily.</p>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
