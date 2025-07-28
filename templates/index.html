@@ -399,25 +399,34 @@
             // --- Helper functions ---
             // Helper function to parse a value string (e.g., "7,34 g" or "1 000 kcal") into a number and its unit
             function parseValueAndUnit(valueString) {
+                // console.log('parseValueAndUnit: Original valueString:', valueString); // Debug log - REMOVED
+
                 if (typeof valueString !== 'string' && typeof valueString !== 'number') {
+                    // console.log('parseValueAndUnit: Input is not string or number, returning NaN.'); // Debug log - REMOVED
                     return { number: NaN, unit: '' };
                 }
                 if (typeof valueString === 'number') {
+                    // console.log('parseValueAndUnit: Input is number, returning as is.'); // Debug log - REMOVED
                     return { number: valueString, unit: '' };
                 }
 
                 // First, remove all spaces (including non-breaking spaces) from the string.
                 // Then, replace decimal commas with dots for parseFloat.
                 const cleanedString = String(valueString).replace(/[\s\u00A0]/g, '').replace(',', '.');
+                // console.log('parseValueAndUnit: Cleaned string:', cleanedString); // Debug log - REMOVED
 
                 // Now, extract the numeric part and the unit.
                 // The regex now expects a cleaned number format.
                 const match = cleanedString.match(/(\d+\.?\d*)\s*(.*)/);
+                // console.log('parseValueAndUnit: Regex match result:', match); // Debug log - REMOVED
+
                 if (match) {
                     const number = parseFloat(match[1]);
                     const unit = match[2] || '';
+                    // console.log('parseValueAndUnit: Parsed number:', number, 'Unit:', unit); // Debug log - REMOVED
                     return { number, unit };
                 }
+                // console.log('parseValueAndUnit: No match found, returning NaN.'); // Debug log - REMOVED
                 return { number: NaN, unit: '' };
             }
 
