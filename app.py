@@ -7,22 +7,6 @@ import json
 import re
 from urllib.parse import urljoin # Import urljoin
 
-# Importy pro Selenium
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException
-
-# Pro automatické stažení ChromeDriveru (volitelné, ale doporučené)
-try:
-    from webdriver_manager.chrome import ChromeDriverManager
-except ImportError:
-    print("Warning: webdriver_manager not installed. Please install it (`pip install webdriver-manager`) or manually provide chromedriver path.")
-    ChromeDriverManager = None
-
-
 app = Flask(__name__)
 
 # URL pro autocomplete API KalorickýchTabulky.cz
@@ -36,50 +20,6 @@ DEFAULT_HEADERS = {
     'Accept': 'application/json, text/plain, */*',
     'Referer': 'https://www.kaloricketabulky.cz/'
 }
-
-# Inicializace WebDriveru
-driver = None
-
-def initialize_driver():
-    """Inicializuje Selenium WebDriver."""
-    global driver
-    if driver is None:
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')  # Spustit prohlížeč v režimu bez hlavy (bez GUI)
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu') # Pro Windows
-        options.add_argument('--window-size=1920,1080') # Nastavení velikosti okna
-        options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-
-        try:
-            if ChromeDriverManager:
-                service = Service(ChromeDriverManager().install())
-            else:
-                # Fallback if webdriver_manager is not available or explicitly provide path
-                # IMPORTANT: Replace 'path/to/chromedriver' with the actual path if not using ChromeDriverManager
-                service = Service('path/to/chromedriver') # <-- ZDE ZADEJTE CESTU K CHROMEDRIVERU
-            driver = webdriver.Chrome(service=service, options=options)
-            print("Selenium WebDriver initialized successfully.")
-        except WebDriverException as e:
-            print(f"Failed to initialize Selenium WebDriver: {e}")
-            print("Please ensure ChromeDriver is installed and its path is correctly set or webdriver_manager is installed.")
-            driver = None # Ensure driver is None if initialization fails
-
-@app.before_request
-def before_first_request():
-    """Inicializuje WebDriver před prvním požadavkem."""
-    initialize_driver()
-
-@app.teardown_appcontext
-def teardown_driver(exception=None):
-    """Zavře WebDriver při ukončení kontextu aplikace."""
-    global driver
-    if driver:
-        driver.quit()
-        driver = None
-        print("Selenium WebDriver closed.")
-
 
 @app.route('/')
 def index():
@@ -198,19 +138,13 @@ def search_food():
 @app.route('/get_details', methods=['POST'])
 def get_details():
     """
-    Získá detailní nutriční hodnoty (bílkoviny, sacharidy, tuky) pro daný slug pomocí Selenium.
-    Slug již obsahuje plnou cestu (/potraviny/ nebo /recepty/).
+    Získá detailní nutriční hodnoty (bílkoviny, sacharidy, tuky) pro daný slug.
+    Používá requests/BeautifulSoup4.
     """
     slug = request.json.get('slug')
-    food_type_from_frontend = request.json.get('food_type') # Get food_type from frontend
+    food_type_from_frontend = request.json.get('food_type')
     if not slug:
         return jsonify({"error": "Chybí slug pro získání detailů."}), 400
-
-    global driver
-    if driver is None:
-        initialize_driver() # Pokusíme se inicializovat ovladač, pokud ještě není
-        if driver is None:
-            return jsonify({"error": "Selenium WebDriver není inicializován. Zkontrolujte logy serveru."}), 500
 
     details = {
         "total_kcal": "N/A", "total_kj": "N/A", "protein": "N/A", "protein_rdi": "N/A",
@@ -266,52 +200,6 @@ def get_details():
 
         print(f"  extract_value_and_unit_from_text: No number/unit pattern found in '{text_content}'.")
         return {"value": "N/A", "unit": ""}
-
-
-    def scrape_with_selenium(url, is_recipe_flag):
-        """Načte stránku pomocí Selenium a počká na načtení dynamického obsahu."""
-        print(f"Navigating to {url} using Selenium...")
-        try:
-            driver.get(url)
-            time.sleep(1) # Přidání krátké prodlevy pro usazení stránky
-
-            # Čekání na plné načtení dokumentu (DOM a všechny zdroje)
-            WebDriverWait(driver, 20).until(
-                lambda d: d.execute_script("return document.readyState") == 'complete'
-            )
-            print(f"Stránka {url} úspěšně načtena (document.readyState == 'complete').")
-
-            # Po načtení dokumentu přidáme krátké (5s) volitelné čekání na dynamický obsah
-            try:
-                if is_recipe_flag:
-                    WebDriverWait(driver, 5).until(
-                        EC.any_of(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, 'div.recipe-energy-value')),
-                            EC.presence_of_element_located((By.CSS_SELECTOR, 'div[ng-bind="model.recipe.energyValue"]'))
-                        )
-                    )
-                else: # Pro potraviny
-                    WebDriverWait(driver, 5).until(
-                        EC.any_of(
-                            EC.presence_of_element_located((By.ID, 'calculatedEnergyValueInit')),
-                            EC.presence_of_element_located((By.CSS_SELECTOR, 'div.text-sum, div.text-sum-xs'))
-                        )
-                    )
-                print(f"Doplňková kontrola dynamického obsahu pro {url} prošla.")
-            except TimeoutException:
-                print(f"Varování: Specifický dynamický obsah nebyl nalezen do 5 sekund pro {url}, přesto pokračuji.")
-
-            return driver.page_source
-        except TimeoutException:
-            print(f"Vypršel časový limit při čekání na document.readyState == 'complete' pro {url}.")
-            print(f"Current page source (for debugging): {driver.page_source[:2000]}...")
-            return driver.page_source # Return what we have, for further inspection
-        except WebDriverException as e:
-            print(f"WebDriver error while loading page {url}: {e}")
-            return None
-        except Exception as e:
-            print(f"An unexpected error occurred with Selenium for {url}: {e}")
-            return None
 
 
     def parse_nutrients_from_soup(soup_obj, is_recipe_page=False):
@@ -515,46 +403,65 @@ def get_details():
             
         return scraped_data
 
-    # Define scrape_and_parse_attempt as a nested helper to avoid code duplication
-    def scrape_and_parse_attempt(full_url, is_recipe_flag): # Modified signature
-        """Načte stránku pomocí Selenium a parsuje nutriční hodnoty."""
-        print(f"Attempting to scrape URL: {full_url} (is_recipe_flag: {is_recipe_flag})")
-        page_source = scrape_with_selenium(full_url, is_recipe_flag)
-        if page_source:
-            soup = BeautifulSoup(page_source, 'html.parser')
+    def scrape_with_requests_only(url, is_recipe_flag):
+        """Načte stránku pomocí requests a parsuje nutriční hodnoty."""
+        print(f"Attempting to scrape URL with requests: {url} (is_recipe_flag: {is_recipe_flag})")
+        try:
+            response = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
             scraped_data = parse_nutrients_from_soup(soup, is_recipe_page=is_recipe_flag)
-            scraped_data["source_url"] = full_url # Set source_url to the successful URL
+            scraped_data["source_url"] = url
             return scraped_data
-        return None
+        except requests.exceptions.RequestException as e:
+            print(f"Requests error while loading page {url}: {e}")
+            return None
+        except Exception as e:
+            print(f"An unexpected error occurred with requests for {url}: {e}")
+            return None
 
     scraped_data = None
+    target_url = None
+    is_recipe_flag = False
 
     if food_type_from_frontend == 'potravina':
-        full_url = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
-        scraped_data = scrape_and_parse_attempt(full_url, False)
+        target_url = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
+        is_recipe_flag = False
     elif food_type_from_frontend == 'recept':
-        full_url = urljoin(BASE_WEB_URL, '/recepty/' + slug.lstrip('/'))
-        scraped_data = scrape_and_parse_attempt(full_url, True)
+        target_url = urljoin(BASE_WEB_URL, '/recepty/' + slug.lstrip('/'))
+        is_recipe_flag = True
     else:
-        # Fallback if food_type_from_frontend is not explicitly 'potravina' or 'recept' (or is None)
+        # Fallback if food_type_from_frontend is not explicitly provided or recognized
         # Try /potraviny/ first
-        potraviny_url = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
-        scraped_data = scrape_and_parse_attempt(potraviny_url, False)
+        target_url = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
+        is_recipe_flag = False
 
-        # If total_kcal is still N/A, try /recepty/
-        if scraped_data is None or scraped_data.get("total_kcal") == "N/A":
-            recepty_url = urljoin(BASE_WEB_URL, '/recepty/' + slug.lstrip('/'))
-            scraped_data = scrape_and_parse_attempt(recepty_url, True)
+    # Attempt with requests/BeautifulSoup4
+    print(f"Attempting scrape with requests for {target_url}")
+    scraped_data = scrape_with_requests_only(target_url, is_recipe_flag)
 
+    # If requests failed to get total_kcal and food_type was not explicit, try the other type with requests
+    if (scraped_data is None or scraped_data.get("total_kcal") == "N/A") and food_type_from_frontend not in ['potravina', 'recept']:
+        print(f"Requests failed or food_type unknown, trying alternative type with requests for {slug}")
+        if is_recipe_flag: # If current attempt was recipe, try foodstuff
+            target_url_alt = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
+            scraped_data = scrape_with_requests_only(target_url_alt, False)
+        else: # If current attempt was foodstuff, try recipe
+            target_url_alt = urljoin(BASE_WEB_URL, '/recepty/' + slug.lstrip('/'))
+            scraped_data = scrape_with_requests_only(target_url_alt, True)
+        
+        # Update target_url and is_recipe_flag if the alternative scrape was successful
+        if scraped_data and scraped_data.get("total_kcal") != "N/A":
+            target_url = target_url_alt
+            is_recipe_flag = not is_recipe_flag # Flip the flag
 
-    if scraped_data and scraped_data.get("total_kcal") != "N/A": # Ensure we have valid scraped data
+    if scraped_data and scraped_data.get("total_kcal") != "N/A":
         details.update(scraped_data)
         print(f"DEBUG: Details to be sent to frontend: {json.dumps(details, indent=2)}")
         return jsonify(details)
     else:
-        print(f"Failed to get details after all attempts for slug: {slug}")
-        return jsonify({"error": f"Nepodařilo se získat detaily pro {slug} po všech pokusech."}), 500
+        print(f"Failed to get details after all requests attempts for slug: {slug}")
+        return jsonify({"error": f"Nepodařilo se získat detaily pro {slug} po všech pokusech pouze s requests."}), 500
 
 if __name__ == '__main__':
-    initialize_driver() # Inicializovat ovladač při spuštění aplikace
     app.run(debug=True)
