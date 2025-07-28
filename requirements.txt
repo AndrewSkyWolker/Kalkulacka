@@ -2,6 +2,4 @@ Flask
 beautifulsoup4
 gunicorn
 requests
-selenium
-webdriver-manager
 urljoin
