@@ -321,20 +321,23 @@ def get_details():
 
             # Check if it's a sub-nutrient (text-nutrient)
             elif 'text-nutrient' in row.get('class', []):
-                sub_nutrient_name_div = row.find('div', class_='flex-auto')
-                if sub_nutrient_name_div:
-                    sub_nutrient_name = sub_nutrient_name_div.get_text(strip=True)
-                    # The value is typically in the last div child of this row
-                    value_div_candidate = row.find_all('div')[-1]
-                    value_text = "N/A"
-                    if value_div_candidate:
-                        # Get all text content from the value_div_candidate
-                        value_text = value_div_candidate.get_text(strip=True)
-                    
+                # Find all direct div children of the current row
+                direct_div_children = row.find_all('div', recursive=False)
+                
+                sub_nutrient_name = "N/A"
+                value_text = "N/A"
+
+                if len(direct_div_children) >= 2:
+                    # The first div child should contain the name
+                    sub_nutrient_name = direct_div_children[0].get_text(strip=True)
+                    # The last div child should contain the value
+                    value_text = direct_div_children[-1].get_text(strip=True)
+                
+                if sub_nutrient_name and sub_nutrient_name != "N/A": # Ensure we actually got a name
                     temp_nutrients[sub_nutrient_name] = {"value": value_text, "rdi": "N/A"}
                     print(f"    Identified sub-nutrient: '{sub_nutrient_name}', Value: '{value_text}'")
                 else:
-                    print(f"    Skipping text-nutrient row: '{row_text_raw}' (no sub-nutrient name div found)")
+                    print(f"    Skipping text-nutrient row: '{row_text_raw}' (could not extract sub-nutrient name)")
                     pass
 
             # Check if it's an RDI (text-desc)
@@ -360,6 +363,8 @@ def get_details():
         for nutrient_name, data in temp_nutrients.items():
             parsed_value = extract_value_and_unit_from_text(data['value'])
             display_value = f"{parsed_value['value'].replace('.', ',')} {parsed_value['unit']}".strip() if parsed_value['value'] != "N/A" else "N/A"
+            
+            print(f"  Mapping '{nutrient_name}' with display_value: '{display_value}'") # Keep this
             
             parsed_rdi = extract_value_and_unit_from_text(data['rdi'])
             rdi_display_value = f"{parsed_rdi['value'].replace('.', ',')} {parsed_rdi['unit']}".strip() if parsed_rdi['value'] != "N/A" else "N/A"
