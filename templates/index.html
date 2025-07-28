@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+[⚠️ Suspicious Content] <!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
@@ -206,17 +206,51 @@
             height: 120px; /* Omezí výšku na výšku obrázku */
         }
 
-        /* Nový kontejner pro interaktivní sekci (jednotka a kalorie/kJ) */
+        /* Nový kontejner pro interaktivní sekci (množství/jednotka a kalorie/kJ) */
         .interactive-section {
             display: flex;
-            justify-content: flex-end; /* Zarovná položky doprava */
+            justify-content: space-between; /* Rozprostře položky na kraje */
             align-items: flex-end; /* Zarovná položky dole */
             margin-bottom: 15px;
-            padding-left: 0; /* Zrušeno odsazení */
-            padding-right: 5px; /* Změněno na 5px odsazení od pravého okraje */
+            padding-left: 10px; /* Odsazení 10px od levého okraje */
+            padding-right: 0; /* Změněno na 0 odsazení od pravého okraje */
         }
 
-        /* Styly pro energetické hodnoty */
+        /* Styly pro pole množství a jednotek */
+        .amount-controls {
+            display: flex; /* Použijeme flexbox */
+            flex-direction: column; /* Položky pod sebou */
+            align-items: flex-start; /* Zarovná položky doleva */
+            gap: 10px; /* Mezera mezi inputem a selectem */
+            flex-shrink: 0; /* Zabrání zmenšování */
+        }
+
+        .amount-input, .unit-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px; /* Zaoblení okrajů */
+            font-family: 'Dutch801 Rm BT', serif; /* Změna písma */
+            box-sizing: border-box; /* Zahrnuje padding a border do výpočtu šířky */
+        }
+
+        .amount-input {
+            width: 100px; /* Šířka 100px */
+            font-size: 1.3em; /* Zvětšené písmo */
+            text-align: left; /* Zarovnání textu doleva */
+        }
+
+        .unit-select {
+            width: 60px; /* Zmenšeno na polovinu */
+            font-size: 0.8em; /* Zmenšené písmo */
+            appearance: none; /* Odstranit výchozí šipku selectu */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="%23333" viewBox="0 0 10 10"><path d="M0 2.5 L5 7.5 L10 2.5 Z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 8px;
+            margin: 0; /* Odstraněno automatické vycentrování */
+        }
+
+        /* Kontejner pro energetické hodnoty */
         .energy-display-group {
             flex-grow: 1; /* Povolí zabrat zbývající prostor */
             text-align: right; /* Zarovnání obsahu doprava */
@@ -354,7 +388,8 @@
 
                 if (item.slug) {
                     foodItemDiv.dataset.slug = item.slug;
-                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url)); // Předáme i image_url
+                    // Pass item.calories to showDetailsModal to determine initial unit type
+                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url, item.calories));
                 }
 
                 let imageHtml = '';
@@ -402,9 +437,51 @@
                 }
             });
 
-            async function showDetailsModal(slug, name, imageUrl) {
+            // Helper function to parse a value string (e.g., "7,34 g" or "1 000 kcal") into a number and its unit
+            function parseValueAndUnit(valueString) {
+                if (typeof valueString !== 'string' && typeof valueString !== 'number') {
+                    return { number: NaN, unit: '' };
+                }
+                if (typeof valueString === 'number') {
+                    return { number: valueString, unit: '' };
+                }
+
+                // First, remove all spaces from the string.
+                // Then, replace decimal commas with dots for parseFloat.
+                const cleanedString = String(valueString).replace(/\s/g, '').replace(',', '.');
+
+                // Now, extract the numeric part and the unit.
+                // The regex now expects a cleaned number format.
+                const match = cleanedString.match(/(\d+\.?\d*)\s*(.*)/);
+                if (match) {
+                    const number = parseFloat(match[1]);
+                    const unit = match[2] || '';
+                    return { number, unit };
+                }
+                return { number: NaN, unit: '' };
+            }
+
+            // Helper function to format a number for display with locale-specific decimal comma and unit
+            function formatNumberForDisplay(number, unit = '', isEnergyValue = false) { // Removed isRecalculated, added isEnergyValue
+                if (typeof number !== 'number' || isNaN(number) || number === null || number === undefined) {
+                    return '-'; // Return '-' for non-numeric values
+                }
+
+                let formattedNumber;
+                if (isEnergyValue) {
+                    // Round to whole number for energy values (kcal, kJ)
+                    formattedNumber = Math.round(number).toString().replace('.', ',');
+                } else {
+                    // Round to 2 decimal places for all other values (nutrients)
+                    formattedNumber = number.toFixed(2).replace('.', ',');
+                }
+
+                return `${formattedNumber}${unit ? ` ${unit}` : ''}`;
+            }
+
+            async function showDetailsModal(slug, name, imageUrl, initialCaloriesString) { // Added initialCaloriesString
                 detailsModal.style.display = 'flex';
-                modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily...</p>`;
+                modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily pro ${name}...</p>`;
 
                 try {
                     const response = await fetch('/get_details', {
@@ -422,6 +499,8 @@
                     }
 
                     const details = await response.json();
+                    // Store the original details (strings with units) for recalculation
+                    let originalDetailsData = details;
 
                     if (details.error) {
                         modalDetailsContent.innerHTML = `<p class="error-details">Chyba ze serveru: ${details.error}</p>`;
@@ -429,26 +508,27 @@
                         const placeholderImage = 'https://placehold.co/120x120/cccccc/333333?text=Bez+obr.';
                         let displayImageUrl = imageUrl || placeholderImage;
 
-                        // Sestavení HTML pro zobrazení detailů jako na obrázku
-                        let detailsHtml = `
-                            <div class="modal-header-content">
-                                <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
-                                <div id="modalHeaderName" class="modal-header-name">${name}</div>
-                            </div>
-                            <div class="interactive-section">
-                                <!-- Pole pro množství a jednotky byly odstraněny -->
-                                <div class="energy-display-group">
-                                    <div class="energy-header">${details.total_kcal}</div>
-                                    <div class="energy-sub-header">Také ${details.total_kj} • Energetická hodnota</div>
-                                </div>
-                            </div>
-                        `;
+                        // Determine if the food is liquid based on the unit in initialCaloriesString
+                        const { unit: initialUnitForTypeDetection } = parseValueAndUnit(initialCaloriesString);
+                        const isLiquidFood = initialUnitForTypeDetection.toLowerCase().includes('ml');
 
-                        // Funkce pro generování řádků živin
-                        function createNutrientRow(label, value, rdi = null, dotColor = null, type = 'other') {
+                        // Function to generate nutrient rows
+                        // originalValueString and rdiString are expected to be strings like "7,34 g" or "N/A"
+                        function createNutrientRow(label, originalValueString, rdiString = null, dotColor = null, type = 'other', currentFactor = 1) { // Removed isRecalculated
+                            const { number: originalNumericValue, unit: displayUnit } = parseValueAndUnit(originalValueString);
+
+                            let calculatedValueDisplay;
+                            if (isNaN(originalNumericValue)) {
+                                calculatedValueDisplay = '-';
+                            } else {
+                                // For nutrient rows, isEnergyValue is always false
+                                calculatedValueDisplay = formatNumberForDisplay(originalNumericValue * currentFactor, displayUnit, false);
+                            }
+
                             let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
                             let labelClass = 'nutrient-label';
                             let valueClass = 'nutrient-value';
+                            let valueId = `nutrient-${label.replace(/\s+/g, '-').toLowerCase()}`; // Unique ID for each nutrient value
 
                             let labelStyle = '';
                             let valueStyle = '';
@@ -479,59 +559,134 @@
                             return `
                                 <div class="nutrient-row">
                                     <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
-                                    <div class="${valueClass}" style="${valueStyle}">${value}</div>
+                                    <div id="${valueId}" class="${valueClass}" style="${valueStyle}">${calculatedValueDisplay}</div>
                                 </div>
-                                <!-- ${rdi && rdi !== 'N/A' ? `<div class="nutrient-sub-label">Doporučený denní příjem: ${rdi}</div>` : ''} -->
                             `;
                         }
 
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Bílkoviny', details.protein, details.protein_rdi, 'red', 'main');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Sacharidy', details.carbs, details.carbs_rdi, 'blue', 'main');
-                        detailsHtml += createNutrientRow('Cukry', details.sugar, null, null, 'nested');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Tuky', details.fat, details.fat_rdi, 'orange', 'main');
-                        detailsHtml += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested');
-                        detailsHtml += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested');
-                        detailsHtml += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested');
-                        detailsHtml += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested');
-                        detailsHtml += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Vláknina', details.fiber, details.fiber_rdi, 'green', 'main');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Sůl', details.salt, null, null, 'other');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Vápník', details.calcium, null, null, 'other');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Sodík', details.sodium, null, null, 'other');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('Voda', details.water, null, null, 'other');
-                        detailsHtml += `</div>`;
-
-                        detailsHtml += `<div class="nutrient-section">`;
-                        detailsHtml += createNutrientRow('PHE', details.phe, null, null, 'other');
-                        detailsHtml += `</div>`;
-
-
-                        detailsHtml += `
+                        // Initial HTML structure
+                        let detailsHtml = `
+                            <div class="modal-header-content">
+                                <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
+                                <div id="modalHeaderName" class="modal-header-name">${name}</div>
+                            </div>
+                            <div class="interactive-section">
+                                <div class="amount-controls">
+                                    <input type="number" id="amountInput" value="100" min="0" step="1" class="amount-input">
+                                    <select id="unitSelect" class="unit-select">
+                                        <!-- Options will be dynamically added here -->
+                                    </select>
+                                </div>
+                                <div class="energy-display-group">
+                                    <div id="totalKcalDisplay" class="energy-header">${formatNumberForDisplay(parseValueAndUnit(details.total_kcal).number, parseValueAndUnit(details.total_kcal).unit, true)}</div>
+                                    <div id="totalKjDisplay" class="energy-sub-header">Také ${formatNumberForDisplay(parseValueAndUnit(details.total_kj).number, parseValueAndUnit(details.total_kj).unit, true)} • Energetická hodnota</div>
+                                </div>
+                            </div>
+                            <div id="nutrientDetailsSection">
+                                <!-- Nutrients will be rendered here -->
+                            </div>
                             ${details.source_url ? `<p style="text-align: center; margin-top: 20px;"><a href="${details.source_url}" target="_blank">Zobrazit na KalorickéTabulky.cz</a></p>` : ''}
                         `;
                         modalDetailsContent.innerHTML = detailsHtml;
+
+                        // Get references to elements after they are added to DOM
+                        const amountInput = document.getElementById('amountInput');
+                        const unitSelect = document.getElementById('unitSelect');
+
+                        // Dynamically populate unit options based on food type
+                        unitSelect.innerHTML = ''; // Clear existing options
+                        if (isLiquidFood) {
+                            unitSelect.add(new Option('ml', 'ml'));
+                            unitSelect.add(new Option('l', 'l'));
+                            unitSelect.value = 'ml'; // Set default to ml
+                        } else {
+                            unitSelect.add(new Option('g', 'g'));
+                            unitSelect.add(new Option('kg', 'kg'));
+                            unitSelect.value = 'g'; // Set default to g
+                        }
+
+
+                        const updateDisplay = () => {
+                            const currentAmount = parseFloat(amountInput.value) || 0;
+                            const selectedUnit = unitSelect.value;
+                            let baseAmount = currentAmount; // This will be the amount in grams/ml
+
+                            // Convert currentAmount to base units (grams or milliliters)
+                            if (selectedUnit === 'kg') {
+                                baseAmount = currentAmount * 1000; // 1 kg = 1000 g
+                            } else if (selectedUnit === 'l') {
+                                baseAmount = currentAmount * 1000; // 1 l = 1000 ml. This is standard conversion.
+                            }
+                            // If 'g' or 'ml' are selected, baseAmount is already correct.
+
+                            let factor = baseAmount / 100; // Factor relative to the 100-unit base data from API
+
+                            renderAllNutrientDetails(originalDetailsData, factor); // No isRecalculated needed here, handled by formatNumberForDisplay
+                        };
+
+                        amountInput.addEventListener('input', updateDisplay);
+                        unitSelect.addEventListener('change', updateDisplay); // Enable unit conversion logic
+
+                        // Render initial nutrient details after setting up units and event listeners
+                        renderAllNutrientDetails(originalDetailsData, 1); // Initial factor is 1 (for 100 units)
+
+
+                        // Function to render all nutrient details
+                        function renderAllNutrientDetails(details, currentFactor) { // Removed isRecalculated from signature
+                            let nutrientsHtml = '';
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Bílkoviny', details.protein, details.protein_rdi, 'red', 'main', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Sacharidy', details.carbs, details.carbs_rdi, 'blue', 'main', currentFactor);
+                            nutrientsHtml += createNutrientRow('Cukry', details.sugar, null, null, 'nested', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Tuky', details.fat, details.fat_rdi, 'orange', 'main', currentFactor);
+                            nutrientsHtml += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested', currentFactor);
+                            nutrientsHtml += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested', currentFactor);
+                            nutrientsHtml += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested', currentFactor);
+                            nutrientsHtml += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', currentFactor);
+                            nutrientsHtml += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Vláknina', details.fiber, details.fiber_rdi, 'green', 'main', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Sůl', details.salt, null, null, 'other', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Vápník', details.calcium, null, null, 'other', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Sodík', details.sodium, null, null, 'other', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('Voda', details.water, null, null, 'other', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            nutrientsHtml += `<div class="nutrient-section">`;
+                            nutrientsHtml += createNutrientRow('PHE', details.phe, null, null, 'other', currentFactor);
+                            nutrientsHtml += `</div>`;
+
+                            // Update the energy display directly
+                            const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(details.total_kcal);
+                            document.getElementById('totalKcalDisplay').textContent = formatNumberForDisplay(kcalNum * currentFactor, kcalUnit, true); // isEnergyValue is true
+
+                            const { number: kjNum, unit: kjUnit } = parseValueAndUnit(details.total_kj);
+                            document.getElementById('totalKjDisplay').textContent = `Také ${formatNumberForDisplay(kjNum * currentFactor, kjUnit, true)} • Energetická hodnota`; // isEnergyValue is true
+
+                            // Update the dedicated nutrient display section
+                            document.getElementById('nutrientDetailsSection').innerHTML = nutrientsHtml;
+                        }
 
                         // Dynamické nastavení velikosti písma a pozice názvu po vložení HTML
                         const modalHeaderImage = document.getElementById('modalHeaderImage');
