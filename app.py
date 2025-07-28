@@ -83,7 +83,7 @@ def search_food():
 
                 image_url = None
 
-                # Krok 2: Pokud má potravina obrázek a platný slug, zkusíme ho scrapovat z detailní stránky
+                # Krok 2: Pokud má potravina obrázek a platný slug, zkusíme ho scrapovat z detailních stránek potravin nebo receptů
                 if food_has_image and food_url_slug:
                     detail_page_url_food = f"{DETAIL_BASE_URL}{food_url_slug}"
                     detail_page_url_recipe = f"{RECIPE_BASE_URL}{food_url_slug}"
@@ -192,16 +192,18 @@ def get_details():
             # Get the full text content of the tag, stripping whitespace
             full_text = str(tag_obj.get_text(strip=True)) if isinstance(tag_obj, Tag) else str(tag_obj).strip()
 
-            # Regex to find a number (with comma or dot as decimal) and an optional unit
-            # It's flexible to catch various number formats and common units
-            match = re.search(r'(\d+[,.]?\d*)\s*([kK]cal|[kK]J|[gG]|[mM]g|%)?', full_text, re.IGNORECASE)
+            # Regex to find a number (with optional spaces for thousands, and optional comma/dot decimal)
+            # followed by an optional unit.
+            # This regex is more robust for numbers like "1 234,56" or "1234.56"
+            match = re.search(r'([\d\s]+(?:[,.]\d*)?)\s*([kK]cal|[kK]J|[gG]|[mM]g|%)?', full_text, re.IGNORECASE)
 
             if match:
-                value_part_raw = match.group(1) # Get the raw value part (e.g., "4,29" or "73.2")
+                value_part_raw = match.group(1) # Get the raw value part (e.g., "1 234,56")
                 unit_part = match.group(2) if match.group(2) else ''
 
-                # Just replace the decimal dot with a comma if present, otherwise keep as is
-                formatted_value = value_part_raw.replace('.', ',')
+                # Remove all spaces and then replace decimal dot with a comma if present, otherwise keep as is
+                # This ensures the number is clean for parsing in the frontend and unit is separate.
+                formatted_value = value_part_raw.replace(' ', '').replace('.', ',')
 
                 return f"{formatted_value} {unit_part}".strip()
             else:
