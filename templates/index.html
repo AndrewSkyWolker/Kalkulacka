@@ -11,7 +11,7 @@
             background-color: #f4f4f4;
         }
         .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; } /* Centered heading */
         form { display: flex; justify-content: center; margin-bottom: 20px; }
         input[type="text"] { padding: 10px; width: 60%; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
         button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px; }
@@ -26,6 +26,7 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            position: relative; /* Pro umístění food-type-label */
         }
         .food-item:hover {
             background-color: #e0e0e0;
@@ -50,7 +51,7 @@
         .modal-overlay {
             display: none; /* Skryté ve výchozím stavu */
             position: fixed;
-            z-index: 1;
+            z-index: 1000; /* Higher z-index for modals */
             left: 0;
             top: 0;
             width: 100%;
@@ -116,10 +117,6 @@
         .nutrient-section {
             margin-bottom: 10px;
             padding-bottom: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .nutrient-section:last-child {
-            border-bottom: none;
         }
         .nutrient-row {
             display: flex;
@@ -131,17 +128,15 @@
             display: flex;
             align-items: center;
             font-weight: bold;
-            /* Barva bude nastavena inline pomocí JS */
         }
         .nutrient-label.main {
-            font-size: 1.2em; /* Zvětšená velikost písma */
+            font-size: 1.2em;
         }
         .nutrient-value {
             font-weight: bold;
-            /* Barva bude nastavena inline pomocí JS */
         }
         .nutrient-value.main-value {
-            font-size: 1.2em; /* Zvětšená velikost písma */
+            font-size: 1.2em;
         }
         .nutrient-sub-label {
             margin-left: 20px; /* Odsazení pro podkategorie */
@@ -151,6 +146,11 @@
         .nutrient-sub-value {
              font-size: 0.9em;
              color: #555;
+        }
+        /* New class for specific font size and weight */
+        .nutrient-normal-font {
+            font-size: 1.05em; /* Adjusted font size */
+            font-weight: normal; /* Normal font weight */
         }
         .dot {
             width: 8px;
@@ -258,16 +258,105 @@
             flex-direction: column; /* Položky pod sebou */
             justify-content: flex-end; /* Zarovná obsah na konec (dole) */
         }
+
+        /* Styly pro tlačítko Recepty a jeho možnosti */
+        .main-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* Align to the left */
+            margin-top: 0px; /* Adjusted margin */
+            margin-bottom: 15px; /* Added margin to separate from search form */
+            gap: 10px; /* Space between buttons */
+        }
+        .main-controls button {
+            width: 150px; /* Smaller width for recipe button */
+            padding: 12px 15px;
+            background-color: #28a745; /* Green color for recipes */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0; /* Reset margin */
+        }
+        .main-controls button:hover {
+            background-color: #218838;
+        }
+
+        /* New modal for recipe options */
+        #recipeOptionsModal .modal-content {
+            max-width: 300px; /* Smaller width for recipe options modal */
+            text-align: center;
+            display: flex; /* Use flexbox for centering content */
+            flex-direction: column; /* Arrange items in a column */
+            align-items: center; /* Center items horizontally */
+        }
+        #recipeOptionsModal .modal-content h3 {
+            margin-top: 0; /* Remove top margin for modal heading */
+            margin-bottom: 20px; /* Add some space below heading */
+            color: #333;
+        }
+        #recipeOptionsModal .modal-content button {
+            width: 100%; /* Full width buttons inside modal */
+            margin-bottom: 10px; /* Space between buttons */
+            background-color: #28a745; /* Green color for recipe options */
+        }
+        #recipeOptionsModal .modal-content button:last-child {
+            margin-bottom: 0;
+        }
+        #recipeOptionsModal .modal-content button:hover {
+            background-color: #218838;
+        }
+
+        /* New style for nutrient line separator */
+        .nutrient-line-separator {
+            border-top: 1px solid #eee; /* Same style as existing separator */
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .food-type-label {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            /* Default background color - will be overridden by specific classes */
+            background-color: #6366f1; /* Original purple */
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            z-index: 10;
+        }
+
+        /* New styles for food item colors */
+        .food-item.food-item-potravina {
+            background-color: #e0f2f7; /* Light blue */
+            border-color: #a7d9ed;
+        }
+        .food-item.food-item-recept {
+            background-color: #e6ffe6; /* Light green */
+            border-color: #b3e6b3;
+        }
+
+        /* Specific colors for food type labels */
+        .food-type-label.potravina-label {
+            background-color: #1a75ff; /* Vibrant blue, similar saturation to original purple */
+        }
+
+        .food-type-label.recept-label {
+            background-color: #0baf0b; /* Vibrant green, similar saturation to original purple */
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Studijní Vyhledávač Potravin (Kalorické Tabulky)</h1>
-        <p>
-            <strong>Upozornění:</strong> Tato aplikace je určena pouze pro studijní účely a demonstruje principy web scrapingu/API volání.
-            Nepoužívá oficiální dokumentované API Kalorických Tabulek. Data jsou omezena na název a kalorie, protože tato URL neposkytuje detailní nutriční hodnoty.
-            Používání takových metod může být v rozporu s podmínkami použití webu. Buďte opatrní a respektujte pravidla.
-        </p>
+        <h1>Kalorická kalkulačka</h1>
+
+        <div class="main-controls">
+            <button id="recipesButton">Recepty</button>
+        </div>
 
         <form id="searchForm">
             <input type="text" id="query" name="query" placeholder="Zadejte název potraviny (např. jablko, kuře)">
@@ -281,7 +370,7 @@
         </div>
     </div>
 
-    <!-- Modální okno pro detaily -->
+    <!-- Modální okno pro detaily potravin -->
     <div id="detailsModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -292,151 +381,22 @@
         </div>
     </div>
 
+    <!-- Nové modální okno pro možnosti receptů -->
+    <div id="recipeOptionsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" id="closeRecipeOptionsModal">&times;</span>
+            <h3>Recepty</h3>
+            <button id="createRecipe">Vytvořit nový recept</button>
+            <button id="editRecipe">Upravit stávající recept</button>
+            <button id="viewRecipes">Zobrazit seznam receptů</button>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => { // Zajištění, že se skript spustí až po načtení DOM
-            document.getElementById('searchForm').addEventListener('submit', async function(event) {
-                event.preventDefault();
+        document.addEventListener('DOMContentLoaded', (event) => {
+            console.log('DOMContentLoaded fired.'); // Přidáno pro diagnostiku
 
-                const query = document.getElementById('query').value;
-                const resultsDiv = document.getElementById('results');
-                const loadingDiv = document.getElementById('loading');
-                const errorDiv = document.getElementById('error-message');
-
-                resultsDiv.innerHTML = '';
-                errorDiv.innerHTML = '';
-                loadingDiv.style.display = 'block';
-
-                try {
-                    const response = await fetch('/search', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `query=${encodeURIComponent(query)}`
-                    });
-
-                    if (!response.ok) {
-                        loadingDiv.style.display = 'none';
-                        let errorData;
-                        try {
-                            errorData = await response.json();
-                        } catch (e) {
-                            errorData = { error: await response.text() };
-                        }
-                        errorDiv.textContent = `Chyba: ${errorData.error || response.statusText}`;
-                        return;
-                    }
-
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
-                    let buffer = '';
-
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            break;
-                        }
-
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop();
-
-                        for (const line of lines) {
-                            if (line.trim() === '') continue;
-                            try {
-                                const item = JSON.parse(line);
-                                if (item.error) {
-                                    errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                                    loadingDiv.style.display = 'none';
-                                    return;
-                                }
-                                appendFoodItem(item);
-                            } catch (e) {
-                                console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
-                            }
-                        }
-                    }
-                    if (buffer.trim() !== '') {
-                        try {
-                            const item = JSON.parse(buffer);
-                            if (item.error) {
-                                errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                            } else {
-                                appendFoodItem(item);
-                            }
-                        } catch (e) {
-                            console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
-                        }
-                    }
-
-                    loadingDiv.style.display = 'none';
-                    if (resultsDiv.innerHTML === '') {
-                        resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
-                    }
-
-                } catch (error) {
-                    console.error('Došlo k chybě:', error);
-                    loadingDiv.style.display = 'none';
-                    errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
-                }
-            });
-
-            function appendFoodItem(item) {
-                const resultsDiv = document.getElementById('results');
-                const foodItemDiv = document.createElement('div');
-                foodItemDiv.classList.add('food-item');
-
-                if (item.slug) {
-                    foodItemDiv.dataset.slug = item.slug;
-                    // Pass item.calories to showDetailsModal to determine initial unit type
-                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url, item.calories));
-                }
-
-                let imageHtml = '';
-                const placeholderImage = 'https://placehold.co/60x60/cccccc/333333?text=Bez+obr.';
-
-                if (item.image_url) {
-                    imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
-                } else {
-                     imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
-                }
-
-                let itemContent = `
-                    ${imageHtml}
-                    <div class="food-details">
-                        <h3>${item.name}</h3>
-                        <p><strong>Kalorie:</strong> ${item.calories}</p>
-                    </div>
-                `;
-                foodItemDiv.innerHTML = itemContent;
-                resultsDiv.appendChild(foodItemDiv);
-            }
-
-            // Logika modálního okna
-            const detailsModal = document.getElementById('detailsModal');
-            const closeButton = document.querySelector('.close-button');
-            const modalDetailsContent = document.getElementById('modalDetailsContent');
-
-            console.log("Close button element:", closeButton); // Zkontrolujeme, zda byl element nalezen
-
-            // Přidán console.log pro ladění
-            if (closeButton) {
-                closeButton.addEventListener('click', () => {
-                    console.log("Close button clicked!");
-                    detailsModal.style.display = 'none';
-                });
-            } else {
-                console.error("Close button element not found!");
-            }
-
-
-            window.addEventListener('click', (event) => {
-                if (event.target == detailsModal) {
-                    console.log("Clicked outside modal, closing."); // Přidán console.log
-                    detailsModal.style.display = 'none';
-                }
-            });
-
+            // --- Helper functions ---
             // Helper function to parse a value string (e.g., "7,34 g" or "1 000 kcal") into a number and its unit
             function parseValueAndUnit(valueString) {
                 if (typeof valueString !== 'string' && typeof valueString !== 'number') {
@@ -446,9 +406,9 @@
                     return { number: valueString, unit: '' };
                 }
 
-                // First, remove all spaces from the string.
+                // First, remove all spaces (including non-breaking spaces) from the string.
                 // Then, replace decimal commas with dots for parseFloat.
-                const cleanedString = String(valueString).replace(/\s/g, '').replace(',', '.');
+                const cleanedString = String(valueString).replace(/[\s\u00A0]/g, '').replace(',', '.');
 
                 // Now, extract the numeric part and the unit.
                 // The regex now expects a cleaned number format.
@@ -462,7 +422,7 @@
             }
 
             // Helper function to format a number for display with locale-specific decimal comma and unit
-            function formatNumberForDisplay(number, unit = '', isEnergyValue = false) { // Removed isRecalculated, added isEnergyValue
+            function formatNumberForDisplay(number, unit = '', isEnergyValue = false) {
                 if (typeof number !== 'number' || isNaN(number) || number === null || number === undefined) {
                     return '-'; // Return '-' for non-numeric values
                 }
@@ -470,16 +430,306 @@
                 let formattedNumber;
                 if (isEnergyValue) {
                     // Round to whole number for energy values (kcal, kJ)
-                    formattedNumber = Math.round(number).toString().replace('.', ',');
+                    formattedNumber = Math.round(number);
                 } else {
                     // Round to 2 decimal places for all other values (nutrients)
-                    formattedNumber = number.toFixed(2).replace('.', ',');
+                    formattedNumber = parseFloat(number.toFixed(2));
                 }
-
-                return `${formattedNumber}${unit ? ` ${unit}` : ''}`;
+                
+                // Use toLocaleString for proper locale-specific formatting (handles thousands and decimals)
+                // For Czech, it uses space for thousands and comma for decimal
+                return `${formattedNumber.toLocaleString('cs-CZ')}${unit ? ` ${unit}` : ''}`;
             }
 
-            async function showDetailsModal(slug, name, imageUrl, initialCaloriesString) { // Added initialCaloriesString
+            // Function to create a single nutrient row HTML
+            function createNutrientRow(label, originalValueString, rdiString = null, dotColor = null, type = 'other', currentFactor = 1, addSeparator = false, fontWeight = 'bold', fontSize = null) {
+                const { number: originalNumericValue, unit: displayUnit } = parseValueAndUnit(originalValueString);
+
+                let calculatedValueDisplay;
+                if (isNaN(originalNumericValue)) {
+                    calculatedValueDisplay = '-';
+                } else {
+                    calculatedValueDisplay = formatNumberForDisplay(originalNumericValue * currentFactor, displayUnit, false);
+                }
+
+                let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
+                let labelClass = 'nutrient-label';
+                let valueClass = 'nutrient-value';
+
+                let labelStyle = `font-weight: ${fontWeight};`;
+                let valueStyle = `font-weight: ${fontWeight};`;
+                let separatorHtml = '';
+
+                if (fontSize) {
+                    labelStyle += `font-size: ${fontSize};`;
+                    valueStyle += `font-size: ${fontSize};`;
+                }
+
+                if (dotColor) {
+                    let colorHex = '';
+                    switch (dotColor) {
+                        case 'red': colorHex = '#f44336'; break;
+                        case 'blue': colorHex = '#2196f3'; break;
+                        case 'orange': colorHex = '#ff9800'; break;
+                        case 'green': colorHex = '#4caf50'; break;
+                        default: colorHex = '';
+                    }
+                    if (colorHex) {
+                        labelStyle += `color: ${colorHex};`;
+                        valueStyle += `color: ${colorHex};`;
+                    }
+                }
+
+                if (type === 'main') {
+                    labelClass += ' main';
+                    valueClass += ' main-value';
+                } else if (type === 'nested') {
+                    labelClass = 'nutrient-sub-label';
+                    valueClass = 'nutrient-sub-value';
+                }
+
+                if (addSeparator) {
+                    separatorHtml = `<div class="nutrient-line-separator"></div>`;
+                }
+
+                // Removed RDI HTML generation as per user request
+                let rdiHtml = ''; 
+
+                return `
+                    ${separatorHtml}
+                    <div class="nutrient-row">
+                        <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
+                        <div class="${valueClass}" style="${valueStyle}">${calculatedValueDisplay}</div>
+                    </div>
+                    ${rdiHtml}
+                `;
+            }
+
+            // Function to render all nutrient details
+            function renderAllNutrientDetails(details, factor = 1) {
+                console.log("renderAllNutrientDetails called with details:", details, "factor:", factor);
+                const nutrientDetailsSection = document.getElementById('nutrientDetailsSection');
+                if (!nutrientDetailsSection) {
+                    console.error("Element 'nutrientDetailsSection' not found. Cannot render nutrients.");
+                    return;
+                }
+                nutrientDetailsSection.innerHTML = ''; // Clear previous content
+
+                // Update energy display
+                const totalKcalDisplay = document.getElementById('totalKcalDisplay');
+                const totalKjDisplay = document.getElementById('totalKjDisplay');
+
+                if (totalKcalDisplay) {
+                    const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(details.total_kcal);
+                    totalKcalDisplay.textContent = formatNumberForDisplay(kcalNum * factor, kcalUnit, true);
+                }
+                if (totalKjDisplay) {
+                    const { number: kjNum, unit: kjUnit } = parseValueAndUnit(details.total_kj);
+                    totalKjDisplay.textContent = `Také ${formatNumberForDisplay(kjNum * factor, kjUnit, true)} • Energetická hodnota`;
+                }
+
+                let nutrientsHtmlContent = '';
+
+                // Section 1: Main Macronutrients
+                nutrientsHtmlContent += `<div class="nutrient-section">`;
+                // Add separator above Bílkoviny
+                nutrientsHtmlContent += createNutrientRow('Bílkoviny', details.protein, null, 'red', 'main', factor, true);
+                // Add separator above Sacharidy
+                nutrientsHtmlContent += createNutrientRow('Sacharidy', details.carbs, null, 'blue', 'main', factor, true);
+                nutrientsHtmlContent += createNutrientRow('Cukry', details.sugar, null, null, 'nested', factor, false);
+                // Add separator above Tuky
+                nutrientsHtmlContent += createNutrientRow('Tuky', details.fat, null, 'orange', 'main', factor, true);
+                nutrientsHtmlContent += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested', factor, false);
+                nutrientsHtmlContent += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested', factor, false);
+                nutrientsHtmlContent += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested', factor, false);
+                nutrientsHtmlContent += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', factor, false);
+                nutrientsHtmlContent += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', factor, false);
+                nutrientsHtmlContent += `</div>`;
+
+                // Section 2: Fiber
+                nutrientsHtmlContent += `<div class="nutrient-section">`;
+                nutrientsHtmlContent += createNutrientRow('Vláknina', details.fiber, null, 'green', 'main', factor, true); // Separator above Vláknina
+                nutrientsHtmlContent += `</div>`;
+
+                // Section 3: Minerals and Water (normal font, specific size)
+                nutrientsHtmlContent += `<div class="nutrient-section">`;
+                nutrientsHtmlContent += createNutrientRow('Sůl', details.salt, null, null, 'main', factor, true, 'normal', '1.05em'); // Separator above Sůl, normal font, 1.05em
+                nutrientsHtmlContent += createNutrientRow('Vápník', details.calcium, null, null, 'main', factor, false, 'normal', '1.05em');
+                nutrientsHtmlContent += createNutrientRow('Sodík', details.sodium, null, null, 'main', factor, false, 'normal', '1.05em');
+                nutrientsHtmlContent += createNutrientRow('Voda', details.water, null, null, 'main', factor, false, 'normal', '1.05em');
+                nutrientsHtmlContent += createNutrientRow('PHE', details.phe, null, null, 'main', factor, false, 'normal', '1.05em');
+                nutrientsHtmlContent += `</div>`;
+
+                nutrientDetailsSection.innerHTML = nutrientsHtmlContent;
+                console.log("Nutrients rendered.");
+            }
+
+
+            // --- Logika vyhledávání potravin ---
+            const searchForm = document.getElementById('searchForm'); // Get the form element
+            if (searchForm) { // Check if the form element exists
+                searchForm.addEventListener('submit', async function(event) {
+                    console.log('Search form submit event fired.'); // Přidáno pro diagnostiku
+                    event.preventDefault();
+
+                    const query = document.getElementById('query').value;
+                    const resultsDiv = document.getElementById('results');
+                    const loadingDiv = document.getElementById('loading');
+                    const errorDiv = document.getElementById('error-message');
+
+                    resultsDiv.innerHTML = '';
+                    errorDiv.innerHTML = '';
+                    loadingDiv.style.display = 'block';
+
+                    try {
+                        const response = await fetch('/search', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `query=${encodeURIComponent(query)}`
+                        });
+
+                        if (!response.ok) {
+                            loadingDiv.style.display = 'none';
+                            let errorData;
+                            try {
+                                errorData = await response.json();
+                            } catch (e) {
+                                errorData = { error: await response.text() };
+                            }
+                            errorDiv.textContent = `Chyba: ${errorData.error || response.statusText}`;
+                            return;
+                        }
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder('utf-8');
+                        let buffer = '';
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                break;
+                            }
+
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop();
+
+                            for (const line of lines) {
+                                if (line.trim() === '') continue;
+                                try {
+                                    const item = JSON.parse(line);
+                                    if (item.error) {
+                                        errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                                        loadingDiv.style.display = 'none';
+                                        return;
+                                    }
+                                    appendFoodItem(item);
+                                } catch (e) {
+                                    console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
+                                }
+                            }
+                        }
+                        if (buffer.trim() !== '') {
+                            try {
+                                const item = JSON.parse(buffer);
+                                if (item.error) {
+                                    errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                                } else {
+                                    appendFoodItem(item);
+                                }
+                            } catch (e) {
+                                console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
+                            }
+                        }
+
+                        loadingDiv.style.display = 'none';
+                        if (resultsDiv.innerHTML === '') {
+                            resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
+                        }
+
+                    } catch (error) {
+                        console.error('Došlo k chybě:', error);
+                        loadingDiv.style.display = 'none';
+                        errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
+                    }
+                });
+            } else {
+                console.error('Search form element with ID "searchForm" not found.'); // Přidáno pro diagnostiku
+            }
+
+
+            function appendFoodItem(item) {
+                const resultsDiv = document.getElementById('results');
+                const foodItemDiv = document.createElement('div');
+                foodItemDiv.classList.add('food-item');
+
+                // Add class based on food type for coloring the item background
+                if (item.food_type === 'potravina') {
+                    foodItemDiv.classList.add('food-item-potravina');
+                } else if (item.food_type === 'recept') {
+                    foodItemDiv.classList.add('food-item-recept');
+                }
+
+
+                if (item.slug) {
+                    foodItemDiv.dataset.slug = item.slug;
+                    foodItemDiv.dataset.foodType = item.food_type; // Uložíme food_type
+                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url, item.calories, item.food_type));
+                }
+
+                let imageHtml = '';
+                const placeholderImage = 'https://placehold.co/60x60/cccccc/333333?text=Bez+obr.';
+
+                if (item.image_url) {
+                    imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
+                } else {
+                     imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
+                }
+
+                let foodTypeLabelHtml = '';
+                if (item.food_type) {
+                    let labelClass = '';
+                    if (item.food_type === 'potravina') {
+                        labelClass = 'potravina-label';
+                    } else if (item.food_type === 'recept') {
+                        labelClass = 'recept-label';
+                    }
+                    foodTypeLabelHtml = `<div class="food-type-label ${labelClass}">${item.food_type}</div>`;
+                }
+
+                let itemContent = `
+                    ${imageHtml}
+                    <div class="food-details">
+                        <h3>${item.name}</h3>
+                        <p><strong>Kalorie:</strong> ${item.calories}</p>
+                    </div>
+                    ${foodTypeLabelHtml}
+                `;
+                foodItemDiv.innerHTML = itemContent;
+                resultsDiv.appendChild(foodItemDiv);
+            }
+
+            // --- Logika modálního okna pro detaily potravin ---
+            const detailsModal = document.getElementById('detailsModal');
+            const closeButton = detailsModal.querySelector('.close-button');
+            const modalDetailsContent = document.getElementById('modalDetailsContent');
+
+            if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                    detailsModal.style.display = 'none';
+                });
+            }
+
+            window.addEventListener('click', (event) => {
+                if (event.target == detailsModal) {
+                    detailsModal.style.display = 'none';
+                }
+            });
+
+            async function showDetailsModal(slug, name, imageUrl, initialCaloriesString, foodType) {
+                console.log("showDetailsModal called for slug:", slug, "name:", name, "foodType:", foodType);
                 detailsModal.style.display = 'flex';
                 modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily pro ${name}...</p>`;
 
@@ -489,17 +739,32 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ slug: slug })
+                        body: JSON.stringify({ slug: slug, food_type: foodType })
                     });
 
+                    console.log("Response status:", response.status);
+
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        modalDetailsContent.innerHTML = `<p class="error-details">Chyba při načítání detailů: ${errorData.error || response.statusText}</p>`;
+                        let errorMessage = `Chyba při načítání detailů (Status: ${response.status}).`;
+                        let rawResponseText = await response.text();
+                        console.error("Raw server response (not OK):", rawResponseText);
+                        try {
+                            const errorData = JSON.parse(rawResponseText); // Try parsing as JSON
+                            if (errorData && errorData.error) {
+                                errorMessage = `Chyba ze serveru: ${errorData.error}`;
+                            } else {
+                                errorMessage = `Chyba ze serveru (neznámý formát odpovědi).`;
+                            }
+                        } catch (jsonParseError) {
+                            errorMessage = `Chyba při komunikaci se serverem: ${response.statusText || 'Neznámá chyba'}. Odpověď serveru nebyla platný JSON.`;
+                            console.error("Nepodařilo se parsovat odpověď serveru jako JSON:", jsonParseError);
+                        }
+                        modalDetailsContent.innerHTML = `<p class="error-details">${errorMessage}</p>`;
                         return;
                     }
 
                     const details = await response.json();
-                    // Store the original details (strings with units) for recalculation
+                    console.log("Received details JSON:", details); // Log the received JSON
                     let originalDetailsData = details;
 
                     if (details.error) {
@@ -508,63 +773,9 @@
                         const placeholderImage = 'https://placehold.co/120x120/cccccc/333333?text=Bez+obr.';
                         let displayImageUrl = imageUrl || placeholderImage;
 
-                        // Determine if the food is liquid based on the unit in initialCaloriesString
                         const { unit: initialUnitForTypeDetection } = parseValueAndUnit(initialCaloriesString);
                         const isLiquidFood = initialUnitForTypeDetection.toLowerCase().includes('ml');
 
-                        // Function to generate nutrient rows
-                        // originalValueString and rdiString are expected to be strings like "7,34 g" or "N/A"
-                        function createNutrientRow(label, originalValueString, rdiString = null, dotColor = null, type = 'other', currentFactor = 1) { // Removed isRecalculated
-                            const { number: originalNumericValue, unit: displayUnit } = parseValueAndUnit(originalValueString);
-
-                            let calculatedValueDisplay;
-                            if (isNaN(originalNumericValue)) {
-                                calculatedValueDisplay = '-';
-                            } else {
-                                // For nutrient rows, isEnergyValue is always false
-                                calculatedValueDisplay = formatNumberForDisplay(originalNumericValue * currentFactor, displayUnit, false);
-                            }
-
-                            let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
-                            let labelClass = 'nutrient-label';
-                            let valueClass = 'nutrient-value';
-                            let valueId = `nutrient-${label.replace(/\s+/g, '-').toLowerCase()}`; // Unique ID for each nutrient value
-
-                            let labelStyle = '';
-                            let valueStyle = '';
-                            let colorHex = '';
-
-                            if (dotColor) {
-                                switch (dotColor) {
-                                    case 'red': colorHex = '#f44336'; break;
-                                    case 'blue': colorHex = '#2196f3'; break;
-                                    case 'orange': colorHex = '#ff9800'; break;
-                                    case 'green': colorHex = '#4caf50'; break;
-                                    default: colorHex = '';
-                                }
-                                if (colorHex) {
-                                    labelStyle = `color: ${colorHex};`;
-                                    valueStyle = `color: ${colorHex};`;
-                                }
-                            }
-
-                            if (type === 'main') {
-                                labelClass += ' main';
-                                valueClass += ' main-value';
-                            } else if (type === 'nested') {
-                                labelClass = 'nutrient-sub-label';
-                                valueClass = 'nutrient-sub-value';
-                            }
-
-                            return `
-                                <div class="nutrient-row">
-                                    <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
-                                    <div id="${valueId}" class="${valueClass}" style="${valueStyle}">${calculatedValueDisplay}</div>
-                                </div>
-                            `;
-                        }
-
-                        // Initial HTML structure
                         let detailsHtml = `
                             <div class="modal-header-content">
                                 <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
@@ -578,129 +789,63 @@
                                     </select>
                                 </div>
                                 <div class="energy-display-group">
-                                    <div id="totalKcalDisplay" class="energy-header">${formatNumberForDisplay(parseValueAndUnit(details.total_kcal).number, parseValueAndUnit(details.total_kcal).unit, true)}</div>
-                                    <div id="totalKjDisplay" class="energy-sub-header">Také ${formatNumberForDisplay(parseValueAndUnit(details.total_kj).number, parseValueAndUnit(details.total_kj).unit, true)} • Energetická hodnota</div>
+                                    <div id="totalKcalDisplay" class="energy-header"></div>
+                                    <div id="totalKjDisplay" class="energy-sub-header"></div>
                                 </div>
                             </div>
                             <div id="nutrientDetailsSection">
-                                <!-- Nutrients will be rendered here -->
+                                <!-- Nutrients will be rendered here by renderAllNutrientDetails -->
                             </div>
                             ${details.source_url ? `<p style="text-align: center; margin-top: 20px;"><a href="${details.source_url}" target="_blank">Zobrazit na KalorickéTabulky.cz</a></p>` : ''}
                         `;
                         modalDetailsContent.innerHTML = detailsHtml;
 
-                        // Get references to elements after they are added to DOM
                         const amountInput = document.getElementById('amountInput');
                         const unitSelect = document.getElementById('unitSelect');
 
-                        // Dynamically populate unit options based on food type
-                        unitSelect.innerHTML = ''; // Clear existing options
+                        unitSelect.innerHTML = '';
                         if (isLiquidFood) {
                             unitSelect.add(new Option('ml', 'ml'));
                             unitSelect.add(new Option('l', 'l'));
-                            unitSelect.value = 'ml'; // Set default to ml
+                            unitSelect.value = 'ml';
                         } else {
                             unitSelect.add(new Option('g', 'g'));
                             unitSelect.add(new Option('kg', 'kg'));
-                            unitSelect.value = 'g'; // Set default to g
+                            unitSelect.value = 'g';
                         }
-
 
                         const updateDisplay = () => {
                             const currentAmount = parseFloat(amountInput.value) || 0;
                             const selectedUnit = unitSelect.value;
-                            let baseAmount = currentAmount; // This will be the amount in grams/ml
+                            let baseAmount = currentAmount;
 
-                            // Convert currentAmount to base units (grams or milliliters)
                             if (selectedUnit === 'kg') {
-                                baseAmount = currentAmount * 1000; // 1 kg = 1000 g
+                                baseAmount = currentAmount * 1000;
                             } else if (selectedUnit === 'l') {
-                                baseAmount = currentAmount * 1000; // 1 l = 1000 ml. This is standard conversion.
+                                baseAmount = currentAmount * 1000;
                             }
-                            // If 'g' or 'ml' are selected, baseAmount is already correct.
 
-                            let factor = baseAmount / 100; // Factor relative to the 100-unit base data from API
+                            let factor = baseAmount / 100;
 
-                            renderAllNutrientDetails(originalDetailsData, factor); // No isRecalculated needed here, handled by formatNumberForDisplay
+                            renderAllNutrientDetails(originalDetailsData, factor);
                         };
 
                         amountInput.addEventListener('input', updateDisplay);
-                        unitSelect.addEventListener('change', updateDisplay); // Enable unit conversion logic
+                        unitSelect.addEventListener('change', updateDisplay);
 
-                        // Render initial nutrient details after setting up units and event listeners
-                        renderAllNutrientDetails(originalDetailsData, 1); // Initial factor is 1 (for 100 units)
+                        // Initial render of nutrients
+                        updateDisplay(); // Call updateDisplay to render with initial 100g/ml
 
-
-                        // Function to render all nutrient details
-                        function renderAllNutrientDetails(details, currentFactor) { // Removed isRecalculated from signature
-                            let nutrientsHtml = '';
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Bílkoviny', details.protein, details.protein_rdi, 'red', 'main', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Sacharidy', details.carbs, details.carbs_rdi, 'blue', 'main', currentFactor);
-                            nutrientsHtml += createNutrientRow('Cukry', details.sugar, null, null, 'nested', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Tuky', details.fat, details.fat_rdi, 'orange', 'main', currentFactor);
-                            nutrientsHtml += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested', currentFactor);
-                            nutrientsHtml += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested', currentFactor);
-                            nutrientsHtml += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested', currentFactor);
-                            nutrientsHtml += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', currentFactor);
-                            nutrientsHtml += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Vláknina', details.fiber, details.fiber_rdi, 'green', 'main', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Sůl', details.salt, null, null, 'other', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Vápník', details.calcium, null, null, 'other', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Sodík', details.sodium, null, null, 'other', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('Voda', details.water, null, null, 'other', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            nutrientsHtml += `<div class="nutrient-section">`;
-                            nutrientsHtml += createNutrientRow('PHE', details.phe, null, null, 'other', currentFactor);
-                            nutrientsHtml += `</div>`;
-
-                            // Update the energy display directly
-                            const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(details.total_kcal);
-                            document.getElementById('totalKcalDisplay').textContent = formatNumberForDisplay(kcalNum * currentFactor, kcalUnit, true); // isEnergyValue is true
-
-                            const { number: kjNum, unit: kjUnit } = parseValueAndUnit(details.total_kj);
-                            document.getElementById('totalKjDisplay').textContent = `Také ${formatNumberForDisplay(kjNum * currentFactor, kjUnit, true)} • Energetická hodnota`; // isEnergyValue is true
-
-                            // Update the dedicated nutrient display section
-                            document.getElementById('nutrientDetailsSection').innerHTML = nutrientsHtml;
-                        }
-
-                        // Dynamické nastavení velikosti písma a pozice názvu po vložení HTML
                         const modalHeaderImage = document.getElementById('modalHeaderImage');
                         const modalHeaderName = document.getElementById('modalHeaderName');
 
                         if (modalHeaderImage && modalHeaderName) {
                             const imageHeight = modalHeaderImage.offsetHeight;
-                            let currentFontSize = imageHeight * 0.25; // Inicializujeme na 25% výšky obrázku
+                            let currentFontSize = imageHeight * 0.25;
                             modalHeaderName.style.fontSize = `${currentFontSize}px`;
 
-                            // Iterativně zmenšujeme font-size, dokud se text nevejde
-                            // Kontrolujeme jak šířku, tak výšku
-                            while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) { // Minimální velikost písma 10px
-                                currentFontSize -= 0.5; // Zmenšujeme po 0.5px
+                            while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) {
+                                currentFontSize -= 0.5;
                                 modalHeaderName.style.fontSize = `${currentFontSize}px`;
                             }
                         }
@@ -712,6 +857,46 @@
                 }
             }
         });
+
+        // --- Logika pro tlačítko "Recepty" a modální okno s možnostmi receptů ---
+        const recipesButton = document.getElementById('recipesButton');
+        const recipeOptionsModal = document.getElementById('recipeOptionsModal');
+        const closeRecipeOptionsModalButton = document.getElementById('closeRecipeOptionsModal');
+
+        if (recipesButton && recipeOptionsModal && closeRecipeOptionsModalButton) {
+            recipesButton.addEventListener('click', () => {
+                recipeOptionsModal.style.display = 'flex';
+            });
+
+            closeRecipeOptionsModalButton.addEventListener('click', () => {
+                recipeOptionsModal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == recipeOptionsModal) {
+                    recipeOptionsModal.style.display = 'none';
+                }
+            });
+
+            // Add event listeners for the recipe option buttons (currently just console logs)
+            document.getElementById('createRecipe').addEventListener('click', () => {
+                console.log('Vytvořit nový recept clicked');
+                // Implement logic to create new recipe
+                recipeOptionsModal.style.display = 'none'; // Close modal after click
+            });
+
+            document.getElementById('editRecipe').addEventListener('click', () => {
+                console.log('Upravit stávající recept clicked');
+                // Implement logic to edit existing recipe
+                recipeOptionsModal.style.display = 'none'; // Close modal after click
+            });
+
+            document.getElementById('viewRecipes').addEventListener('click', () => {
+                console.log('Zobrazit seznam receptů clicked');
+                // Implement logic to show recipe list
+                recipeOptionsModal.style.display = 'none'; // Close modal after click
+            });
+        }
     </script>
 </body>
 </html>
