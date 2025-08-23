@@ -4,581 +4,1459 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalorické Tabulky - Studijní Vyhledávač</title>
-    <style>
-        body {
-            font-family: 'Dutch801 Rm BT', serif; /* Změna písma na Dutch801 Rm BT */
-            margin: 20px;
-            background-color: #f4f4f4;
-        }
-        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; margin-bottom: 20px; } /* Centered heading */
-        form { display: flex; justify-content: center; margin-bottom: 20px; }
-        input[type="text"] { padding: 10px; width: 60%; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
-        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px; }
-        button:hover { background-color: #0056b3; }
-        #results { margin-top: 20px; }
-        .food-item {
-            background-color: #e9e9e9;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            position: relative; /* Pro umístění food-type-label */
-        }
-        .food-item:hover {
-            background-color: #e0e0e0;
-        }
-        .food-item h3 { margin: 0 0 5px 0; color: #007bff; }
-        .food-item p { margin: 0; font-size: 0.9em; color: #555; }
-        .food-item img {
-            width: 60px;
-            height: 60px;
-            margin-right: 15px;
-            object-fit: contain;
-            border-radius: 4px;
-        }
-        .food-details {
-            flex-grow: 1;
-        }
-        #loading { display: none; text-align: center; color: #888; }
-        .error { color: red; text-align: center; margin-top: 10px; }
-        .warning { color: orange; text-align: center; margin-top: 10px; font-size: 0.9em; }
-
-        /* Styly pro modální okno */
-        .modal-overlay {
-            display: none; /* Skryté ve výchozím stavu */
-            position: fixed;
-            z-index: 1000; /* Higher z-index for modals */
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px; /* Ponecháno 20px pro vnitřní odsazení obsahu */
-            border: 1px solid #888;
-            width: 80%; /* Původní šířka */
-            max-width: 350px; /* Zúžení o cca 1/3 z 500px */
-            border-radius: 8px;
-            position: relative;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .close-button {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            position: absolute;
-            top: 3px; /* Posunuto nahoru o 7px (z 10px na 3px) */
-            right: 13px; /* Posunuto doprava o 7px (z 20px na 13px) */
-            cursor: pointer;
-            padding: 0; /* Zajištění, že aktivní oblast odpovídá vizuálnímu křížku */
-            line-height: 1; /* Zajištění, že aktivní oblast odpovídá vizuálnímu křížku */
-        }
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .modal-details {
-            font-size: 0.95em;
-        }
-        .modal-details h3 {
-            margin-top: 15px;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 1.1em;
-        }
-        .modal-details p {
-            margin-bottom: 3px;
-        }
-        .modal-details strong {
-            color: #333;
-        }
-        .modal-details .loading-details, .modal-details .error-details {
-            text-align: center;
-            color: #888;
-            margin-top: 10px;
-        }
-        .modal-details .error-details {
-            color: red;
-        }
-
-        /* Styly pro zobrazení jako na obrázku */
-        .nutrient-section {
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-        }
-        .nutrient-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 2px;
-        }
-        .nutrient-label {
-            display: flex;
-            align-items: center;
-            font-weight: bold;
-        }
-        .nutrient-label.main {
-            font-size: 1.2em;
-        }
-        .nutrient-value {
-            font-weight: bold;
-        }
-        .nutrient-value.main-value {
-            font-size: 1.2em;
-        }
-        .nutrient-sub-label {
-            margin-left: 20px; /* Odsazení pro podkategorie */
-            font-size: 0.9em;
-            color: #555;
-        }
-        .nutrient-sub-value {
-             font-size: 0.9em;
-             color: #555;
-        }
-        /* New class for specific font size and weight */
-        .nutrient-normal-font {
-            font-size: 1.05em; /* Adjusted font size */
-            font-weight: normal; /* Normal font weight */
-        }
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 8px;
-            display: inline-block;
-        }
-        .dot.red { background-color: #f44336; }
-        .dot.blue { background-color: #2196f3; }
-        .dot.orange { background-color: #ff9800; }
-        .dot.green { background-color: #4caf50; } /* Pro Vlákninu */
-
-        .energy-header {
-            text-align: right; /* Zarovnání k pravému okraji */
-            font-size: 2.1em; /* Zvětšená velikost písma o 3 body (z 1.8em na 2.1em) */
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .energy-sub-header {
-            text-align: right; /* Zarovnání k pravému okraji */
-            font-size: 0.9em;
-            color: #777;
-            margin-bottom: 0; /* Odstraněna spodní mezera pro přesnější zarovnání */
-            white-space: nowrap; /* Zabrání rozdělení textu na více řádků */
-        }
-
-        /* Nové styly pro hlavičku detailu */
-        .modal-header-content {
-            display: flex; /* Použijeme flexbox */
-            align-items: center; /* Vertikálně vycentrujeme položky */
-            margin-bottom: 20px;
-        }
-        .modal-header-image {
-            width: 120px; /* Zvětšená velikost obrázku a čtvercový tvar */
-            height: 120px; /* Zvětšená velikost obrázku a čtvercový tvar */
-            object-fit: cover; /* Oříznutí namísto deformace */
-            margin-right: 15px;
-            border-radius: 8px; /* Zaoblené rohy, odpovídající modálnímu oknu */
-            flex-shrink: 0; /* Zabrání zmenšování obrázku */
-        }
-        .modal-header-name {
-            flex-grow: 1; /* Povolí názvu zabrat dostupný prostor */
-            flex-shrink: 1; /* Povolí názvu se zmenšit, pokud je potřeba */
-            font-weight: bold;
-            color: #333;
-            text-align: center;
-            line-height: 1.2;
-            overflow: hidden; /* Skryje přetečení textu */
-            display: flex; /* Použijeme flexbox pro vertikální centrování textu uvnitř divu */
-            align-items: center; /* Vertikálně vycentruje text */
-            justify-content: center; /* Horizontálně vycentruje text */
-            height: 120px; /* Omezí výšku na výšku obrázku */
-        }
-
-        /* Nový kontejner pro interaktivní sekci (množství/jednotka a kalorie/kJ) */
-        .interactive-section {
-            display: flex;
-            justify-content: space-between; /* Rozprostře položky na kraje */
-            align-items: flex-end; /* Zarovná položky dole */
-            margin-bottom: 15px;
-            padding-left: 10px; /* Odsazení 10px od levého okraje */
-            padding-right: 0; /* Změněno na 0 odsazení od pravého okraje */
-        }
-
-        /* Styly pro pole množství a jednotek */
-        .amount-controls {
-            display: flex; /* Použijeme flexbox */
-            flex-direction: column; /* Položky pod sebou */
-            align-items: flex-start; /* Zarovná položky doleva */
-            gap: 10px; /* Mezera mezi inputem a selectem */
-            flex-shrink: 0; /* Zabrání zmenšování */
-        }
-
-        .amount-input, .unit-select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px; /* Zaoblení okrajů */
-            font-family: 'Dutch801 Rm BT', serif; /* Změna písma */
-            box-sizing: border-box; /* Zahrnuje padding a border do výpočtu šířky */
-        }
-
-        .amount-input {
-            width: 100px; /* Šířka 100px */
-            font-size: 1.3em; /* Zvětšené písmo */
-            text-align: left; /* Zarovnání textu doleva */
-        }
-
-        .unit-select {
-            width: 60px; /* Zmenšeno na polovinu */
-            font-size: 0.8em; /* Zmenšené písmo */
-            appearance: none; /* Odstranit výchozí šipku selectu */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="%23333" viewBox="0 0 10 10"><path d="M0 2.5 L5 7.5 L10 2.5 Z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            background-size: 8px;
-            margin: 0; /* Odstraněno automatické vycentrování */
-        }
-
-        /* Kontejner pro energetické hodnoty */
-        .energy-display-group {
-            flex-grow: 1; /* Povolí zabrat zbývající prostor */
-            text-align: right; /* Zarovnání obsahu doprava */
-            display: flex; /* Povolí flexbox pro zarovnání obsahu */
-            flex-direction: column; /* Položky pod sebou */
-            justify-content: flex-end; /* Zarovná obsah na konec (dole) */
-        }
-
-        /* Styly pro tlačítko Recepty a jeho možnosti */
-        .main-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; /* Align to the left */
-            margin-top: 0px; /* Adjusted margin */
-            margin-bottom: 15px; /* Added margin to separate from search form */
-            gap: 10px; /* Space between buttons */
-        }
-        .main-controls button {
-            width: 150px; /* Smaller width for recipe button */
-            padding: 12px 15px;
-            background-color: #28a745; /* Green color for recipes */
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 0; /* Reset margin */
-        }
-        .main-controls button:hover {
-            background-color: #218838;
-        }
-
-        /* New modal for recipe options */
-        #recipeOptionsModal .modal-content {
-            max-width: 300px; /* Smaller width for recipe options modal */
-            text-align: center;
-            display: flex; /* Use flexbox for centering content */
-            flex-direction: column; /* Arrange items in a column */
-            align-items: center; /* Center items horizontally */
-        }
-        #recipeOptionsModal .modal-content h3 {
-            margin-top: 0; /* Remove top margin for modal heading */
-            margin-bottom: 20px; /* Add some space below heading */
-            color: #333;
-        }
-        #recipeOptionsModal .modal-content button {
-            width: 100%; /* Full width buttons inside modal */
-            margin-bottom: 10px; /* Space between buttons */
-            background-color: #28a745; /* Green color for recipe options */
-        }
-        #recipeOptionsModal .modal-content button:last-child {
-            margin-bottom: 0;
-        }
-        #recipeOptionsModal .modal-content button:hover {
-            background-color: #218838;
-        }
-
-        /* New style for nutrient line separator */
-        .nutrient-line-separator {
-            border-top: 1px solid #eee; /* Same style as existing separator */
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
-        .food-type-label {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            /* Default background color - will be overridden by specific classes */
-            background-color: #6366f1; /* Original purple */
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: capitalize;
-            z-index: 10;
-        }
-
-        /* New styles for food item colors */
-        .food-item.food-item-potravina {
-            background-color: #e0f2f7; /* Light blue */
-            border-color: #a7d9ed;
-        }
-        .food-item.food-item-recept {
-            background-color: #e6ffe6; /* Light green */
-            border-color: #b3e6b3;
-        }
-
-        /* Specific colors for food type labels */
-        .food-type-label.potravina-label {
-            background-color: #1a75ff; /* Vibrant blue, similar saturation to original purple */
-        }
-
-        .food-type-label.recept-label {
-            background-color: #0baf0b; /* Vibrant green, similar saturation to original purple */
-        }
-    </style>
+    <!-- Odkaz na externí CSS soubor -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body data-app-id="{{ app_id }}" data-firebase-config="{{ firebase_config_json }}">
     <div class="container">
-        <h1>Kalorická kalkulačka</h1>
+        <!-- Nový wrapper pro statické záhlaví -->
+        <div class="sticky-header-wrapper">
+            <div id="userIdDisplay"></div> <!-- Přesunuto sem -->
+            <h1>Kalorická kalkulačka</h1>
 
-        <div class="main-controls">
-            <button id="recipesButton">Recepty</button>
+            <!-- Ikonka ozubeného kolečka pro nastavení (PNG obrázek) -->
+            <img id="settingsIcon" src="{{ url_for('static', filename='icon/nastaveni.png') }}" alt="Nastavení" class="settings-icon">
+
+            <!-- Kontejner pro zarovnání tlačítka "Recepty" a vyhledávání -->
+            <div class="search-and-recipes-container">
+                <div class="main-controls">
+                    <button id="recipesButton" disabled>Recepty</button>
+                    <!-- Přidáme tlačítko pro skenování čárových kódů -->
+                    <button id="barcodeButton" style="margin-left: 10px;">
+                        📷 Skenovat kód
+                    </button>
+                </div>
+
+                <form id="searchForm">
+                    <input type="text" id="query" name="query" placeholder="Zadejte název potraviny (např. jablko, kuře)">
+                    <button type="submit">Vyhledat</button>
+                </form>
+            </div>
+
+            <div id="loading">Vyhledávám...</div>
+            <div id="error-message" class="error"></div>
         </div>
 
-        <form id="searchForm">
-            <input type="text" id="query" name="query" placeholder="Zadejte název potraviny (např. jablko, kuře)">
-            <button type="submit">Vyhledat</button>
-        </form>
-
-        <div id="loading">Vyhledávám...</div>
-        <div id="error-message" class="error"></div>
         <div id="results">
             <!-- Zde se budou zobrazovat výsledky -->
         </div>
     </div>
 
-    <!-- Modální okno pro detaily potravin -->
+    <!-- Modální okno pro detaily potravin a receptů (adaptováno) -->
     <div id="detailsModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <div id="modalDetailsContent" class="modal-details">
-                <p class="loading-details">Načítám detaily...</p>
-                <!-- Zde se načtou detaily -->
+
+            <!-- Přidáme speciální třídu pouze pro recepty -->
+            <div id="modalDetailsContent" class="modal-details modal-recipe-container">
+    <!-- Fixní hlavička receptu -->
+    <div class="modal-recipe-header">
+        <img id="modalHeaderImage" src="{{ url_for('static', filename='icon/recepty.png') }}" alt="" class="modal-header-image">
+        <div class="modal-header-text">
+            <div id="modalHeaderName" class="modal-header-name">Název receptu</div>
+            <div class="energy-display-group">
+                <div id="totalKcalDisplay" class="energy-header">0 kcal</div>
+                <div id="totalKjDisplay" class="energy-sub-header">0 kJ</div>
             </div>
         </div>
     </div>
 
-    <!-- Nové modální okno pro možnosti receptů -->
-    <div id="recipeOptionsModal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-button" id="closeRecipeOptionsModal">&times;</span>
-            <h3>Recepty</h3>
-            <button id="createRecipe">Vytvořit nový recept</button>
-            <button id="editRecipe">Upravit stávající recept</button>
-            <button id="viewRecipes">Zobrazit seznam receptů</button>
+    <!-- Hlavní obsah s scrollováním -->
+    <div class="modal-scrollable-container">
+        <div id="nutrientDetailsSection"></div>
+        <h3 class="ingredients-title">Složení receptu:</h3>
+        <div id="recipeIngredientsList"></div>
+    </div>
+</div>
+
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            console.log('DOMContentLoaded fired.'); // Přidáno pro diagnostiku
+    <!-- Nové modální okno pro vytvoření nového receptu -->
+    <div id="createRecipeModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" id="closeCreateRecipeModal">&times;</span>
+            <h3>Vytvořit nový recept</h3>
+            <input type="text" id="newRecipeNameInput" placeholder="Název receptu">
+            <div class="create-recipe-buttons"> <!-- Nový kontejner pro tlačítka -->
+                <button id="confirmCreateRecipeButton">Vytvořit a přidat</button>
+                <button id="cancelCreateRecipeButton">Zrušit</button>
+            </div>
+        </div>
+    </div>
 
-            // --- Helper functions ---
-            // Helper function to parse a value string (e.g., "7,34 g" or "1 000 kcal") into a number and its unit
-            function parseValueAndUnit(valueString) {
-                // console.log('parseValueAndUnit: Original valueString:', valueString); // Debug log - REMOVED
+    <!-- Nové modální okno pro výběr existujícího receptu -->
+    <div id="selectRecipeModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" id="closeSelectRecipeModal">&times;</span>
+            <h3>Moje recepty</h3>
+            <!-- Nový element pro zobrazení počtu receptů -->
+            <div id="recipeCountDisplay" class="recipe-count-display"></div>
+            <ul id="existingRecipesList">
+                <!-- Recepty se načtou zde -->
+            </ul>
+            <div class="recipe-list-actions">
+                <!-- Tlačítko "Přidat nový recept" je nyní skryto nebo odstraněno -->
+                <!-- Tlačítko "Zavřít" je odstraněno -->
+            </div>
+        </div>
+    </div>
 
-                if (typeof valueString !== 'string' && typeof valueString !== 'number') {
-                    // console.log('parseValueAndUnit: Input is not string or number, returning NaN.'); // Debug log - REMOVED
-                    return { number: NaN, unit: '' };
-                }
-                if (typeof valueString === 'number') {
-                    // console.log('parseValueAndUnit: Input is number, returning as is.'); // Debug log - REMOVED
-                    return { number: valueString, unit: '' };
-                }
+    <!-- Nové modální okno pro vlastní upozornění -->
+    <div id="customNotificationModal" class="modal-overlay">
+        <div class="modal-content">
+            <p id="customNotificationMessage"></p>
+            <div class="notification-controls">
+                <div id="dynamicNotificationToggleContainer" class="notification-toggle-container">
+                    <!-- Dynamic toggle will be inserted here by JS -->
+                </div>
+                <!-- Tlačítka pro potvrzení/zrušení se budou dynamicky vkládat zde -->
+            </div>
+        </div>
+    </div>
 
-                // First, remove all spaces (including non-breaking spaces) from the string.
-                // Then, replace decimal commas with dots for parseFloat.
-                const cleanedString = String(valueString).replace(/[\s\u00A0]/g, '').replace(',', '.');
-                // console.log('parseValueAndUnit: Cleaned string:', cleanedString); // Debug log - REMOVED
+    <!-- Nové modální okno pro nastavení -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" id="closeSettingsModal">&times;</span>
+            <h3>Nastavení</h3>
+            <div class="setting-item">
+                <span class="setting-label">Potvrzení smazání receptu</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmDeleteRecipeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Potvrzení smazání položky</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmDeleteRecipeItemToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Potvrzení uložení změn</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmSaveChangesToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Oznámení vytvoření receptu</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmRecipeCreationToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Oznámení přidání potraviny</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmFoodAdditionToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Oznámení úspěšného smazání</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmRecipeDeletionSuccessToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Oznámení chyby smazání</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmRecipeDeletionErrorToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Oznámení úspěšného uložení změn</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="confirmRecipeSaveSuccessToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
 
-                // Now, extract the numeric part and the unit.
-                // The regex now expects a cleaned number format.
-                const match = cleanedString.match(/(\d+\.?\d*)\s*(.*)/);
-                // console.log('parseValueAndUnit: Regex match result:', match); // Debug log - REMOVED
+    <!-- Nové modální okno pro skenování čárových kódů -->
+    <div id="barcodeModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 90%; height: 70%;">
+            <span class="close-button" id="closeBarcodeModal">&times;</span>
+            <h3>Skenovat čárový kód</h3>
+            <div id="barcodeScannerContainer" style="width: 100%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; border-radius: 8px;">
+                <div id="barcodeUnsupportedMessage" style="text-align: center; padding: 20px;">
+                    <p style="font-size: 18px; margin-bottom: 15px;">🔒 Skenování čárových kódů není v tomto prohlížeči dostupné</p>
+                    <p style="margin-bottom: 10px;">Pro skenování kódů fotoaparátem:</p>
+                    <ul style="text-align: left; margin-bottom: 15px;">
+                        <li>Použijte HTTPS připojení (zabezpečené)</li>
+                        <li>Povolte přístup ke kameře v prohlížeči</li>
+                        <li>Zkuste moderní prohlížeč (Chrome, Firefox, Edge)</li>
+                    </ul>
+                    <p>Můžete také zadat kód ručně:</p>
+                    <input type="text" id="manualBarcodeInput" placeholder="Zadejte čárový kód" style="padding: 10px; width: 200px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                    <button id="submitManualBarcode" style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Vyhledat</button>
+                </div>
+                <video id="barcodeVideo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: none;"></video>
+                <canvas id="barcodeCanvas" style="display: none;"></canvas>
+                <div id="barcodeOverlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 30%; border: 2px solid #4CAF50; border-radius: 8px; pointer-events: none; display: none;"></div>
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button id="toggleCameraButton" style="margin: 0 5px; display: none;">Přepnout kameru</button>
+                <button id="toggleFlashButton" style="margin: 0 5px; display: none;">Blesk</button>
+            </div>
+            <div id="barcodeStatus" style="text-align: center; margin-top: 10px; color: #666;"></div>
+        </div>
+    </div>
 
-                if (match) {
-                    const number = parseFloat(match[1]);
-                    const unit = match[2] || '';
-                    // console.log('parseValueAndUnit: Parsed number:', number, 'Unit:', unit); // Debug log - REMOVED
-                    return { number, unit };
-                }
-                // console.log('parseValueAndUnit: No match found, returning NaN.'); // Debug log - REMOVED
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, where, getDocs, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase (provided by Canvas environment)
+        const bodyElement = document.body;
+        const appId = bodyElement.dataset.appId;
+        const firebaseConfigString = bodyElement.dataset.firebaseConfig;
+
+        console.log("DEBUG JS: Raw appId from data attribute:", appId);
+        console.log("DEBUG JS: Raw firebaseConfigString from data attribute:", firebaseConfigString);
+
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = JSON.parse(firebaseConfigString);
+            console.log("DEBUG JS: Parsed firebaseConfig object:", firebaseConfig);
+            console.log("DEBUG JS: firebaseConfig.projectId:", firebaseConfig.projectId);
+            console.log("DEBUG JS: firebaseConfig.apiKey:", firebaseConfig.apiKey);
+        } catch (e) {
+            console.error("DEBUG JS: Error parsing firebaseConfigString:", e);
+            console.error("DEBUG JS: firebaseConfigString that failed to parse:", firebaseConfigString);
+        }
+
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId;
+        let isAuthReady = false;
+        let userSettings = {
+            confirmRecipeCreation: true, // Default value
+            confirmFoodAddition: true, // Default value
+            confirmDeleteRecipe: true, // New default value for delete confirmation
+            confirmDeleteRecipeItem: true, // New setting for deleting recipe items
+            confirmSaveChanges: true, // Re-added
+            confirmRecipeSaveSuccess: true, // Re-added
+            confirmRecipeDeletionSuccess: true, // New setting for success message
+            confirmRecipeDeletionError: true // New setting for error message
+        };
+
+        // Declare currentFoodItemData in global scope
+        let currentFoodItemData = null; // To store data of the food item being processed
+        let currentEditingRecipeId = null; // Store the ID of the recipe being edited
+        let currentEditingIngredientIndex = null; // Store the index of the ingredient being edited
+        const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}"; // Add this line
+
+        // --- Helper functions (Moved to global scope) ---
+        function parseValueAndUnit(valueString) {
+            if (typeof valueString !== 'string' && typeof valueString !== 'number') {
                 return { number: NaN, unit: '' };
             }
-
-            // Helper function to format a number for display with locale-specific decimal comma and unit
-            function formatNumberForDisplay(number, unit = '', isEnergyValue = false) {
-                if (typeof number !== 'number' || isNaN(number) || number === null || number === undefined) {
-                    return '-'; // Return '-' for non-numeric values
-                }
-
-                let formattedNumber;
-                if (isEnergyValue) {
-                    // Round to whole number for energy values (kcal, kJ)
-                    formattedNumber = Math.round(number);
-                } else {
-                    // Round to 2 decimal places for all other values (nutrients)
-                    formattedNumber = parseFloat(number.toFixed(2));
-                }
-                
-                // Use toLocaleString for proper locale-specific formatting (handles thousands and decimals)
-                // For Czech, it uses space for thousands and comma for decimal
-                return `${formattedNumber.toLocaleString('cs-CZ')}${unit ? ` ${unit}` : ''}`;
+            if (typeof valueString === 'number') {
+                return { number: valueString, unit: '' };
             }
 
-            // Function to create a single nutrient row HTML
-            function createNutrientRow(label, originalValueString, rdiString = null, dotColor = null, type = 'other', currentFactor = 1, addSeparator = false, fontWeight = 'bold', fontSize = null) {
-                const { number: originalNumericValue, unit: displayUnit } = parseValueAndUnit(originalValueString);
+            const cleanedString = String(valueString).replace(/[\s\u00A0]/g, '').replace(',', '.');
+            const match = cleanedString.match(/(\d+\.?\d*)\s*(.*)/);
 
-                let calculatedValueDisplay;
-                if (isNaN(originalNumericValue)) {
-                    calculatedValueDisplay = '-';
-                } else {
-                    calculatedValueDisplay = formatNumberForDisplay(originalNumericValue * currentFactor, displayUnit, false);
-                }
+            if (match) {
+                const number = parseFloat(match[1]);
+                const unit = match[2] || '';
+                return { number, unit };
+            }
+            return { number: NaN, unit: '' };
+        }
 
-                let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
-                let labelClass = 'nutrient-label';
-                let valueClass = 'nutrient-value';
-
-                let labelStyle = `font-weight: ${fontWeight};`;
-                let valueStyle = `font-weight: ${fontWeight};`;
-                let separatorHtml = '';
-
-                if (fontSize) {
-                    labelStyle += `font-size: ${fontSize};`;
-                    valueStyle += `font-size: ${fontSize};`;
-                }
-
-                if (dotColor) {
-                    let colorHex = '';
-                    switch (dotColor) {
-                        case 'red': colorHex = '#f44336'; break;
-                        case 'blue': colorHex = '#2196f3'; break;
-                        case 'orange': colorHex = '#ff9800'; break;
-                        case 'green': colorHex = '#4caf50'; break;
-                        default: colorHex = '';
-                    }
-                    if (colorHex) {
-                        labelStyle += `color: ${colorHex};`;
-                        valueStyle += `color: ${colorHex};`;
-                    }
-                }
-
-                if (type === 'main') {
-                    labelClass += ' main';
-                    valueClass += ' main-value';
-                } else if (type === 'nested') {
-                    labelClass = 'nutrient-sub-label';
-                    valueClass = 'nutrient-sub-value';
-                }
-
-                if (addSeparator) {
-                    separatorHtml = `<div class="nutrient-line-separator"></div>`;
-                }
-
-                // Removed RDI HTML generation as per user request
-                let rdiHtml = ''; 
-
-                return `
-                    ${separatorHtml}
-                    <div class="nutrient-row">
-                        <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
-                        <div class="${valueClass}" style="${valueStyle}">${calculatedValueDisplay}</div>
-                    </div>
-                    ${rdiHtml}
-                `;
+        function formatNumberForDisplay(number, unit = '', isEnergyValue = false) {
+            if (typeof number !== 'number' || isNaN(number) || number === null || number === undefined) {
+                return '-';
             }
 
-            // Function to render all nutrient details
-            function renderAllNutrientDetails(details, factor = 1) {
-                console.log("renderAllNutrientDetails called with details:", details, "factor:", factor);
-                const nutrientDetailsSection = document.getElementById('nutrientDetailsSection');
-                if (!nutrientDetailsSection) {
-                    console.error("Element 'nutrientDetailsSection' not found. Cannot render nutrients.");
+            let formattedNumber;
+            if (isEnergyValue) {
+                // For energy values (kcal, kJ), round to 1 decimal place
+                formattedNumber = parseFloat(number.toFixed(1));
+            } else {
+                // For other nutrients, keep 2 decimal places as before
+                formattedNumber = parseFloat(number.toFixed(2));
+            }
+
+            // Use toLocaleString for proper locale-specific formatting (e.g., comma as decimal separator)
+            return `${formattedNumber.toLocaleString('cs-CZ')}${unit ? ` ${unit}` : ''}`;
+        }
+
+        function createNutrientRow(label, originalValueString, rdiString = null, dotColor = null, type = 'other', currentFactor = 1, addSeparator = false, fontWeight = 'bold', fontSize = null) {
+            const { number: originalNumericValue, unit: displayUnit } = parseValueAndUnit(originalValueString);
+
+            let calculatedValueDisplay;
+            if (isNaN(originalNumericValue)) {
+                calculatedValueDisplay = '-';
+            } else {
+                calculatedValueDisplay = formatNumberForDisplay(originalNumericValue * currentFactor, displayUnit, false);
+            }
+
+            let dot = dotColor ? `<span class="dot ${dotColor}"></span>` : '';
+            let labelClass = 'nutrient-label';
+            let valueClass = 'nutrient-value';
+
+            let labelStyle = `font-weight: ${fontWeight};`;
+            let valueStyle = `font-weight: ${fontWeight};`;
+            let separatorHtml = '';
+
+            if (fontSize) {
+                labelStyle += `font-size: ${fontSize};`;
+                valueStyle += `font-size: ${fontSize};`;
+            }
+
+            if (dotColor) {
+                let colorHex = '';
+                switch (dotColor) {
+                    case 'red': colorHex = '#f44336'; break;
+                    case 'blue': colorHex = '#2196f3'; break;
+                    case 'orange': colorHex = '#ff9800'; break;
+                    case 'green': colorHex = '#4caf50'; break;
+                    default: colorHex = '';
+                }
+                if (colorHex) {
+                    labelStyle += `color: ${colorHex};`;
+                    valueStyle += `color: ${colorHex};`;
+                }
+            }
+
+            if (type === 'main') {
+                labelClass += ' main';
+                valueClass += ' main-value';
+            } else if (type === 'nested') {
+                labelClass = 'nutrient-sub-label';
+                valueClass = 'nutrient-sub-value';
+            }
+
+            if (addSeparator) {
+                separatorHtml = `<div class="nutrient-line-separator"></div>`;
+            }
+
+            let rdiHtml = '';
+
+            return `
+                ${separatorHtml}
+                <div class="nutrient-row">
+                    <div class="${labelClass}" style="${labelStyle}">${dot}${label}</div>
+                    <div class="${valueClass}" style="${valueStyle}">${calculatedValueDisplay}</div>
+                </div>
+                ${rdiHtml}
+            `;
+        }
+
+        function renderAllNutrientDetails(details, factor = 1) {
+            if (!details || typeof details !== 'object') {
+                console.error("Neplatná nutriční data");
+                return;
+            }
+
+            // Upravte formátování čísel:
+            const formatValue = (value) => {
+                if (value === "N/A") return "-";
+                const num = parseFloat(value);
+                return isNaN(num) ? value : num.toLocaleString('cs-CZ');
+            };
+
+            // Upravte výpočet faktorů:
+            const applyFactor = (value) => {
+                if (value === "N/A") return "-";
+                const num = parseFloat(value);
+                return isNaN(num) ? value : (num * factor).toFixed(1);
+            };
+            console.log("renderAllNutrientDetails called with details:", details, "factor:", factor);
+            const nutrientDetailsSection = document.getElementById('nutrientDetailsSection');
+            if (!nutrientDetailsSection) {
+                console.error("Element 'nutrientDetailsSection' not found. Cannot render nutrients.");
+                return;
+            }
+            nutrientDetailsSection.innerHTML = '';
+
+            const totalKcalDisplay = document.getElementById('totalKcalDisplay');
+            const totalKjDisplay = document.getElementById('totalKjDisplay');
+
+            if (totalKcalDisplay) {
+                const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(details.total_kcal);
+                totalKcalDisplay.textContent = formatNumberForDisplay(kcalNum * factor, kcalUnit, true);
+            }
+            if (totalKjDisplay) {
+                const { number: kjNum, unit: kjUnit } = parseValueAndUnit(details.total_kj);
+                totalKjDisplay.textContent = `Také ${formatNumberForDisplay(kjNum * factor, kjUnit, true)} • Energetická hodnota`;
+            }
+
+            let nutrientsHtmlContent = '';
+
+            nutrientsHtmlContent += `<div class="nutrient-section">`;
+            nutrientsHtmlContent += createNutrientRow('Bílkoviny', details.protein, null, 'red', 'main', factor, true);
+            nutrientsHtmlContent += createNutrientRow('Sacharidy', details.carbs, null, 'blue', 'main', factor, true);
+            nutrientsHtmlContent += createNutrientRow('Cukry', details.sugar, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += createNutrientRow('Tuky', details.fat, null, 'orange', 'main', factor, true);
+            nutrientsHtmlContent += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', factor, false);
+            nutrientsHtmlContent += `</div>`;
+
+            nutrientsHtmlContent += `<div class="nutrient-section">`;
+            nutrientsHtmlContent += createNutrientRow('Vláknina', details.fiber, null, 'green', 'main', factor, true);
+            nutrientsHtmlContent += `</div>`;
+
+            nutrientsHtmlContent += `<div class="nutrient-section">`;
+            nutrientsHtmlContent += createNutrientRow('Sůl', details.salt, null, null, 'main', factor, true, 'normal', '1.05em');
+            nutrientsHtmlContent += createNutrientRow('Vápník', details.calcium, null, null, 'main', factor, false, 'normal', '1.05em');
+            nutrientsHtmlContent += createNutrientRow('Sodík', details.sodium, null, null, 'main', factor, false, 'normal', '1.05em');
+            nutrientsHtmlContent += createNutrientRow('Voda', details.water, null, null, 'main', factor, false, 'normal', '1.05em');
+            nutrientsHtmlContent += createNutrientRow('PHE', details.phe, null, null, 'main', factor, false, 'normal', '1.05em');
+            nutrientsHtmlContent += `</div>`;
+
+            nutrientDetailsSection.innerHTML = nutrientsHtmlContent;
+            console.log("Nutrients rendered.");
+        }
+
+        // Initialize Firebase and set up auth listener
+        const initializeFirebase = async () => {
+            try {
+                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId || !firebaseConfig.apiKey) {
+                    throw new Error("Firebase konfigurace je prázdná nebo neplatná (chybí projectId/apiKey).");
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase Auth Ready. User ID:", userId);
+                        await loadUserSettings(); // Load settings after user is authenticated
+                    } else {
+                        if (initialAuthToken) {
+                            try {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                                await loadUserSettings();
+                            } catch (error) {
+                                console.error("Error signing in with custom token:", error);
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in anonymously due to custom token error. User ID:", userId);
+                                await loadUserSettings();
+                            }
+                        } else {
+                            await signInAnonymously(auth);
+                            userId = auth.currentUser.uid;
+                            console.log("Signed in anonymously. User ID:", userId);
+                            await loadUserSettings();
+                        }
+                    }
+                    isAuthReady = true;
+                    document.getElementById('userIdDisplay').textContent = `Uživatel ID: ${userId}`;
+
+                    // Enable recipe buttons once auth is ready
+                    document.getElementById('recipesButton').disabled = false;
+                    
+                    // Initialize barcode scanner after auth is ready
+                    initBarcodeScanner();
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                alert("Chyba při inicializaci Firebase: " + error.message + " Zkuste prosím aplikaci znovu načíst.");
+            }
+        };
+
+        // Function to load user settings from Firestore
+        async function loadUserSettings() {
+            if (!db || !userId) {
+                console.warn("Firestore or User ID not available to load settings.");
+                return;
+            }
+            try {
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/userSettings`);
+                const settingsSnap = await getDoc(settingsDocRef);
+
+                if (settingsSnap.exists()) {
+                    userSettings = settingsSnap.data();
+                    console.log("User settings loaded:", userSettings);
+                } else {
+                    // If no settings exist, create default ones
+                    await setDoc(settingsDocRef, userSettings, { merge: true });
+                    console.log("Default user settings created.");
+                }
+                // Update the UI toggles based on loaded settings
+                const confirmRecipeCreationToggle = document.getElementById('confirmRecipeCreationToggle');
+                const confirmFoodAdditionToggle = document.getElementById('confirmFoodAdditionToggle');
+                const confirmDeleteRecipeToggle = document.getElementById('confirmDeleteRecipeToggle');
+                const confirmDeleteRecipeItemToggle = document.getElementById('confirmDeleteRecipeItemToggle'); // NEW
+                const confirmSaveChangesToggle = document.getElementById('confirmSaveChangesToggle'); // NEW
+                const confirmRecipeSaveSuccessToggle = document.getElementById('confirmRecipeSaveSuccessToggle'); // NEW
+                const confirmRecipeDeletionSuccessToggle = document.getElementById('confirmRecipeDeletionSuccessToggle');
+                const confirmRecipeDeletionErrorToggle = document.getElementById('confirmRecipeDeletionErrorToggle');
+
+                if (confirmRecipeCreationToggle) {
+                    confirmRecipeCreationToggle.checked = userSettings.confirmRecipeCreation;
+                }
+                if (confirmFoodAdditionToggle) {
+                    confirmFoodAdditionToggle.checked = userSettings.confirmFoodAddition;
+                }
+                if (confirmDeleteRecipeToggle) {
+                    confirmDeleteRecipeToggle.checked = userSettings.confirmDeleteRecipe;
+                }
+                if (confirmDeleteRecipeItemToggle) { // NEW
+                    confirmDeleteRecipeItemToggle.checked = userSettings.confirmDeleteRecipeItem;
+                }
+                if (confirmSaveChangesToggle) { // NEW
+                    confirmSaveChangesToggle.checked = userSettings.confirmSaveChanges;
+                }
+                if (confirmRecipeSaveSuccessToggle) { // NEW
+                    confirmRecipeSaveSuccessToggle.checked = userSettings.confirmRecipeSaveSuccess;
+                }
+                if (confirmRecipeDeletionSuccessToggle) {
+                    confirmRecipeDeletionSuccessToggle.checked = userSettings.confirmRecipeDeletionSuccess;
+                }
+                if (confirmRecipeDeletionErrorToggle) {
+                    confirmRecipeDeletionErrorToggle.checked = userSettings.confirmRecipeDeletionError;
+                }
+            } catch (error) {
+                console.error("Error loading user settings:", error);
+                // Fallback to default if loading fails
+                userSettings = {
+                    confirmRecipeCreation: true,
+                    confirmFoodAddition: true,
+                    confirmDeleteRecipe: true,
+                    confirmDeleteRecipeItem: true, // Ensure default is set here too
+                    confirmSaveChanges: true, // Ensure default is set here too
+                    confirmRecipeSaveSuccess: true, // Ensure default is set here too
+                    confirmRecipeDeletionSuccess: true,
+                    confirmRecipeDeletionError: true
+                };
+            }
+        }
+
+        // Function to save user settings to Firestore
+        async function saveUserSettings() {
+            if (!db || !userId) {
+                console.warn("Firestore or User ID not available to save settings.");
+                return;
+            }
+            try {
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/userSettings`);
+                await setDoc(settingsDocRef, userSettings, { merge: true });
+                console.log("User settings saved:", userSettings);
+            } catch (error) {
+                console.error("Error saving user settings:", error);
+            }
+        }
+
+        // --- Custom Notification Modal Elements (moved to global scope) ---
+        const customNotificationModal = document.getElementById('customNotificationModal');
+        const customNotificationMessage = document.getElementById('customNotificationMessage');
+        const dynamicNotificationToggleContainer = document.getElementById('dynamicNotificationToggleContainer');
+        // We'll dynamically create/manage the OK/Cancel buttons within showCustomNotification
+
+        // Function to show custom notification (moved to global scope)
+        function showCustomNotification(message, notificationType, confirmCallback = null, showConfirmButtons = false) {
+            let currentSettingKey;
+            let showToggleInNotification = true; // Flag to decide if the toggle should appear in the notification dialog itself
+
+            // Determine which setting controls this notification's visibility
+            if (notificationType === 'recipeCreation') {
+                currentSettingKey = 'confirmRecipeCreation';
+            } else if (notificationType === 'foodAddition') {
+                currentSettingKey = 'confirmFoodAddition';
+            } else if (notificationType === 'confirmDeleteRecipe') {
+                currentSettingKey = 'confirmDeleteRecipe';
+            } else if (notificationType === 'confirmDeleteRecipeItem') { // NEW
+                currentSettingKey = 'confirmDeleteRecipeItem';
+            } else if (notificationType === 'confirmSaveChanges') { // NEW
+                currentSettingKey = 'confirmSaveChanges';
+            } else if (notificationType === 'recipeSaveSuccess') { // NEW
+                currentSettingKey = 'confirmRecipeSaveSuccess';
+            } else if (notificationType === 'recipeDeletionSuccess') {
+                currentSettingKey = 'confirmRecipeDeletionSuccess'; // New setting
+            } else if (notificationType === 'recipeDeletionError') {
+                currentSettingKey = 'confirmRecipeDeletionError'; // New setting
+            } else {
+                // For unknown types, no specific setting, just show the message without a toggle
+                showToggleInNotification = false;
+            }
+
+            // --- Core Logic: Decide whether to show the modal or execute callback directly ---
+            // If there's a specific setting for this notification type, and it's OFF, and it's NOT a confirmation dialog
+            // (meaning it's an informational message that the user chose to hide), then skip showing the modal).
+            if (currentSettingKey && !userSettings[currentSettingKey] && !showConfirmButtons) {
+                console.log(`Notifikace typu '${notificationType}' je vypnuta v nastavení. Provedení akce přímo (pokud je callback).`);
+                if (confirmCallback) {
+                    confirmCallback(); // This would be for cases where a "success" message might trigger a reload, etc.
+                }
+                return; // Do not show the modal
+            }
+
+            // If it's a confirmation dialog and the setting is OFF, execute callback directly.
+            // This handles the "skip confirmation" case.
+            if ((currentSettingKey === 'confirmDeleteRecipe' || currentSettingKey === 'confirmDeleteRecipeItem' || currentSettingKey === 'confirmSaveChanges') && !userSettings[currentSettingKey] && showConfirmButtons) { // MODIFIED
+                console.log(`Potvrzení je vypnuto. Provedení akce přímo.`);
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                return;
+            }
+
+            customNotificationMessage.innerHTML = message;
+            customNotificationModal.style.display = 'flex';
+
+            dynamicNotificationToggleContainer.innerHTML = ''; // Clear previous content
+            const notificationControls = customNotificationModal.querySelector('.notification-controls');
+            notificationControls.innerHTML = ''; // Clear existing buttons
+
+            // Add toggle if applicable and if it's supposed to be shown in the notification dialog
+            if (showToggleInNotification && currentSettingKey) {
+                const toggleLabelWrapper = document.createElement('label');
+                // Apply specific classes for notification toggles
+                toggleLabelWrapper.classList.add('toggle-switch', 'notification-toggle-switch');
+
+                const toggleInput = document.createElement('input');
+                toggleInput.type = 'checkbox';
+                toggleInput.checked = userSettings[currentSettingKey];
+                toggleInput.id = `dynamicToggle-${notificationType}`;
+
+                const sliderSpan = document.createElement('span');
+                sliderSpan.classList.add('slider');
+
+                toggleLabelWrapper.appendChild(toggleInput);
+                toggleLabelWrapper.appendChild(sliderSpan);
+
+                const labelElement = document.createElement('span');
+                // Apply specific classes for notification labels
+                labelElement.classList.add('toggle-label', 'notification-toggle-label');
+                labelElement.textContent = 'Zobrazovat tento dialog';
+
+                // Always put toggle first for all notifications now
+                dynamicNotificationToggleContainer.appendChild(toggleLabelWrapper); // Toggle first
+                dynamicNotificationToggleContainer.appendChild(labelElement); // Then label
+
+                toggleInput.addEventListener('change', () => {
+                    userSettings[currentSettingKey] = toggleInput.checked;
+                    saveUserSettings();
+                    // Update the main settings modal toggle if it exists and matches
+                    const settingsToggle = document.getElementById(`${currentSettingKey}Toggle`);
+                    if (settingsToggle) {
+                        settingsToggle.checked = toggleInput.checked;
+                    }
+                    console.log(`Nastavení '${currentSettingKey}' změněno na: ${toggleInput.checked}`);
+                });
+            }
+
+            // Create a wrapper for buttons to ensure consistent flex behavior
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '10px'; // Space between buttons
+            buttonsContainer.style.alignItems = 'flex-end'; // Align buttons to their own bottom
+
+            if (showConfirmButtons) {
+                const noButton = document.createElement('button');
+                noButton.textContent = 'Ne';
+                noButton.classList.add('notification-button');
+                noButton.style.backgroundColor = '#f44336';
+                noButton.onmouseover = () => noButton.style.backgroundColor = '#d32f2f';
+                noButton.onmouseout = () => noButton.style.backgroundColor = '#f44336';
+                noButton.onclick = () => {
+                    customNotificationModal.style.display = 'none';
+                };
+                buttonsContainer.appendChild(noButton);
+
+                const yesButton = document.createElement('button');
+                yesButton.textContent = 'Ano';
+                yesButton.classList.add('notification-button');
+                yesButton.style.backgroundColor = '#4CAF50';
+                yesButton.onmouseover = () => yesButton.style.backgroundColor = '#45a049';
+                yesButton.onmouseout = () => yesButton.style.backgroundColor = '#4CAF50';
+                yesButton.onclick = () => {
+                    customNotificationModal.style.display = 'none';
+                    if (confirmCallback) {
+                        confirmCallback();
+                    }
+                };
+                buttonsContainer.appendChild(yesButton);
+
+            } else {
+                const okButton = document.createElement('button');
+                okButton.textContent = 'OK';
+                okButton.classList.add('notification-button');
+                okButton.style.backgroundColor = '#4CAF50';
+                okButton.onclick = () => { customNotificationModal.style.display = 'none'; };
+                buttonsContainer.appendChild(okButton);
+            }
+
+            // Append elements to notificationControls
+            if (dynamicNotificationToggleContainer.children.length > 0) {
+                notificationControls.appendChild(dynamicNotificationToggleContainer);
+            }
+            notificationControls.appendChild(buttonsContainer);
+
+            // Apply consistent styles to notificationControls
+            notificationControls.style.display = 'flex';
+            notificationControls.style.justifyContent = 'space-between'; // Push toggle left, buttons right
+            notificationControls.style.alignItems = 'flex-end'; // Align both to the bottom
+            notificationControls.style.flexWrap = 'nowrap';
+            notificationControls.style.gap = '10px';
+            notificationControls.style.paddingTop = '15px';
+            notificationControls.style.borderTop = '1px solid #eee'; // Corrected line
+        }
+
+        // --- Firestore Functions (moved to global scope) ---
+        async function createNewRecipe(recipeName, foodItem) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
+            try {
+                const recipesColRef = collection(db, `artifacts/${appId}/users/${userId}/recipes`);
+                const newRecipeDoc = await addDoc(recipesColRef, {
+                    name: recipeName,
+                    userId: userId,
+                    ingredients: foodItem ? [foodItem] : [], // Add the initial food item if provided
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+                console.log("New recipe created with ID:", newRecipeDoc.id);
+                // Updated message with bold formatting
+                showCustomNotification(`Recept "<strong>${recipeName}</strong>" byl vytvořen a byla do něj vložena položka "<strong>${foodItem.foodName}</strong>"!`, 'recipeCreation');
+                return newRecipeDoc.id;
+            } catch (error) {
+                console.error("Error creating new recipe:", error);
+                showCustomNotification("Chyba při vytváření nového receptu: " + error.message, 'recipeCreation');
+                return null;
+            }
+        }
+
+        async function addFoodItemToExistingRecipe(recipeId, foodItem) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
+            try {
+                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
+                const recipeSnap = await getDoc(recipeDocRef);
+
+                if (recipeSnap.exists()) {
+                    const currentIngredients = recipeSnap.data().ingredients || [];
+                    const updatedIngredients = [...currentIngredients, foodItem];
+                    await updateDoc(recipeDocRef, {
+                        ingredients: updatedIngredients,
+                        updatedAt: serverTimestamp()
+                    });
+                    console.log(`Food item added to recipe ${recipeId}`);
+                    // Updated message with bold formatting
+                    showCustomNotification(`Položka "<strong>${foodItem.foodName}</strong>" byla přidána do receptu "<strong>${recipeSnap.data().name}</strong>"!`, 'foodAddition');
+                } else {
+                    console.error("Recipe not found:", recipeId);
+                    showCustomNotification("Vybraný recept nebyl nalezen.", 'foodAddition');
+                }
+            } catch (error) {
+                console.error("Error adding food item to recipe:", error);
+                showCustomNotification("Chyba při přidávání položky do receptu: " + error.message, 'foodAddition');
+            }
+        }
+
+        async function updateFoodItemInRecipe(recipeId, ingredientIndex, updatedFoodItem) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
+
+            // Declare recipeDocRef at the top of the function
+            const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
+
+            const executeUpdate = async () => { // Wrap the core update logic in a function
+                try {
+                    const recipeSnap = await getDoc(recipeDocRef);
+
+                    if (recipeSnap.exists()) {
+                        const currentIngredients = recipeSnap.data().ingredients || [];
+                        if (ingredientIndex >= 0 && ingredientIndex < currentIngredients.length) {
+                            currentIngredients[ingredientIndex] = updatedFoodItem;
+                            await updateDoc(recipeDocRef, {
+                                ingredients: currentIngredients,
+                                updatedAt: serverTimestamp()
+                            });
+                            console.log(`Food item at index ${ingredientIndex} updated in recipe ${recipeId}`);
+
+                            // Close the details modal (editing view)
+                            detailsModal.style.display = 'none';
+
+                            // Fetch the updated recipe name from the current snap or refetch if needed
+                            const updatedRecipeName = recipeSnap.data().name;
+                            await showRecipeDetailsModal(recipeId, updatedRecipeName); // Reload recipe details
+
+                            // Show success notification after successful update and reload
+                            showCustomNotification(`Položka "<strong>${updatedFoodItem.foodName}</strong>" v receptu byla úspěšně aktualizována.`, 'recipeSaveSuccess');
+
+                        } else {
+                            console.error("Ingredient index out of bounds:", ingredientIndex);
+                            showCustomNotification("Chyba: Index položky mimo rozsah.", 'recipeDeletionError'); // Reusing error type
+                        }
+                    } else {
+                        console.error("Recipe not found:", recipeId);
+                        showCustomNotification("Vybraný recept nebyl nalezen.", 'recipeDeletionError'); // Reusing error type
+                    }
+                } catch (error) {
+                    console.error("Error updating food item in recipe:", error);
+                    showCustomNotification("Chyba při aktualizaci položky v receptu: " + error.message, 'recipeDeletionError'); // Reusing error type
+                }
+            };
+
+            // Call the confirmation dialog
+            showCustomNotification(`Opravdu chcete uložit změny pro položku "<strong>${updatedFoodItem.foodName}</strong>"?`, 'confirmSaveChanges', executeUpdate, true);
+        }
+
+        async function deleteRecipe(recipeId, recipeName) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
+            // Add a confirmation step before deleting
+            // The third argument is a callback for 'confirm' action, and the fourth indicates if it's a confirmation type
+            showCustomNotification(`Opravdu chcete odstranit recept "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipe', async () => {
+                try {
+                    const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
+                    await deleteDoc(recipeDocRef);
+                    console.log(`Recipe ${recipeId} deleted.`);
+                    showCustomNotification(`Recept "<strong>${recipeName}</strong>" byl úspěšně smazán.`, 'recipeDeletionSuccess');
+                    loadUserRecipes(); // Reload the list after deletion
+                } catch (error) {
+                    console.error("Error deleting recipe:", error);
+                    showCustomNotification(`Chyba při odstraňování receptu "<strong>${recipeName}</strong>": ${error.message}`, 'recipeDeletionError');
+                }
+            }, true); // Pass true to indicate this notification needs a confirm button
+        }
+
+        // NEW: Function to delete a food item from a recipe
+        async function deleteFoodItemFromRecipe(recipeId, ingredientIndex, ingredientName, recipeName) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
+            showCustomNotification(`Opravdu chcete odstranit položku "<strong>${ingredientName}</strong>" z receptu "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipeItem', async () => {
+                try {
+                    const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
+                    const recipeSnap = await getDoc(recipeDocRef);
+
+                    if (recipeSnap.exists()) {
+                        const currentIngredients = recipeSnap.data().ingredients || [];
+                        if (ingredientIndex >= 0 && ingredientIndex < currentIngredients.length) {
+                            currentIngredients.splice(ingredientIndex, 1); // Remove the ingredient
+                            await updateDoc(recipeDocRef, {
+                                ingredients: currentIngredients,
+                                updatedAt: serverTimestamp()
+                            });
+                            console.log(`Ingredient at index ${ingredientIndex} deleted from recipe ${recipeId}.`);
+                            showCustomNotification(`Položka "<strong>${ingredientName}</strong>" byla úspěšně smazána z receptu "<strong>${recipeName}</strong>".`, 'recipeDeletionSuccess');
+                            // Reload the recipe details modal to reflect the change
+                            await showRecipeDetailsModal(recipeId, recipeName);
+                        } else {
+                            console.error("Ingredient index out of bounds:", ingredientIndex);
+                            showCustomNotification("Chyba: Index položky mimo rozsah.", 'recipeDeletionError');
+                        }
+                    } else {
+                        console.error("Recipe not found:", recipeId);
+                        showCustomNotification("Vybraný recept nebyl nalezen.", 'recipeDeletionError');
+                    }
+                } catch (error) {
+                    console.error("Error deleting food item from recipe:", error);
+                    showCustomNotification(`Chyba při odstraňování položky "<strong>${ingredientName}</strong>": ${error.message}`, 'recipeDeletionError');
+                }
+            }, true); // Pass true to indicate this notification needs a confirm button
+        }
+
+        async function loadUserRecipes(forAdding = false) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                existingRecipesList.innerHTML = '<li class="no-recipes-message">Chyba: Aplikace se nenačetla správně.</li>';
+                return;
+            }
+            existingRecipesList.innerHTML = '<li class="no-recipes-message">Načítám recepty...</li>';
+            const recipeCountDisplay = document.getElementById('recipeCountDisplay'); // Get the new element
+            recipeCountDisplay.textContent = ''; // Clear previous count
+
+            try {
+                // Order by 'createdAt' in descending order for newest first
+                const q = query(collection(db, `artifacts/${appId}/users/${userId}/recipes`), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                existingRecipesList.innerHTML = ''; // Clear previous list
+
+                if (querySnapshot.empty) {
+                    existingRecipesList.innerHTML = '<li class="no-recipes-message">Žádné recepty nenalezeny.</li>';
+                    recipeCountDisplay.textContent = 'Celkem receptů: 0'; // Update count
+                } else {
+                    let recipeCounter = 1; // Initialize counter
+                    querySnapshot.forEach((doc) => {
+                        const recipe = doc.data();
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('recipe-list-item'); // Add a class for styling
+                        listItem.dataset.recipeId = doc.id; // Store recipe ID
+
+                        // Create a span for the recipe name, including the number
+                        const recipeNameSpan = document.createElement('span');
+                        recipeNameSpan.textContent = `${recipeCounter}. ${recipe.name}`; // Add numbering
+                        listItem.appendChild(recipeNameSpan);
+
+                        // Create a container for icons
+                        const iconContainer = document.createElement('div');
+                        iconContainer.classList.add('recipe-icons');
+
+                        // Delete icon
+                        const deleteIcon = document.createElement('img');
+                        deleteIcon.src = "{{ url_for('static', filename='icon/kos.png') }}";
+                        deleteIcon.alt = "Odstranit";
+                        deleteIcon.classList.add('recipe-icon');
+                        deleteIcon.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent listItem click
+                            deleteRecipe(doc.id, recipe.name); // Call delete function
+                        });
+                        iconContainer.appendChild(deleteIcon);
+
+                        listItem.appendChild(iconContainer);
+
+                        // If this list is for adding food, make the list item itself clickable
+                        if (forAdding) {
+                            listItem.classList.add('clickable-recipe-item'); // Add a class to indicate clickability
+                            listItem.addEventListener('click', async () => {
+                                await addFoodItemToExistingRecipe(doc.id, currentFoodItemData);
+                                selectRecipeModal.style.display = 'none'; // Close selection modal
+                            });
+                        } else { // This is for viewing recipe details
+                            listItem.classList.add('clickable-recipe-item'); // Ensure it's clickable for viewing
+                            listItem.addEventListener('click', async () => {
+                                selectRecipeModal.style.display = 'none'; // Close the recipe list modal
+                                await showRecipeDetailsModal(doc.id, recipe.name); // Show recipe details
+                            });
+                        }
+
+                        existingRecipesList.appendChild(listItem);
+                        recipeCounter++; // Increment counter
+                    });
+                    recipeCountDisplay.textContent = `Celkem receptů: ${querySnapshot.size}`; // Update total count
+                }
+            } catch (error) {
+                console.error("Error loading user recipes:", error);
+                existingRecipesList.innerHTML = '<li class="no-recipes-message">Chyba při načítání receptů.</li>';
+                recipeCountDisplay.textContent = 'Celkem receptů: Chyba'; // Update count on error
+                showCustomNotification("Chyba při načítání receptů: " + error.message, 'foodAddition');
+            }
+        }
+
+        // New function to show recipe details modal
+        async function showRecipeDetailsModal(recipeId, recipeName) {
+            console.log("showRecipeDetailsModal called for recipe ID:", recipeId, "name:", recipeName);
+            modalDetailsContent.classList.add('modal-recipe-container');
+            document.getElementById('modalDetailsContent').classList.add('modal-recipe-container');
+            detailsModal.style.display = 'flex';
+            modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily receptu "${recipeName}"...</p>`;
+
+            if (!db || !userId) {
+                modalDetailsContent.innerHTML = `<p class="error-details">Chyba: Aplikace se nenačetla správně. Nelze načíst recept.</p>`;
+                return;
+            }
+
+            try {
+                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
+                const recipeSnap = await getDoc(recipeDocRef);
+
+                if (!recipeSnap.exists()) {
+                    modalDetailsContent.innerHTML = `<p class="error-details">Recept "${recipeName}" nebyl nalezen.</p>`;
                     return;
                 }
-                nutrientDetailsSection.innerHTML = ''; // Clear previous content
 
-                // Update energy display
-                const totalKcalDisplay = document.getElementById('totalKcalDisplay');
-                const totalKjDisplay = document.getElementById('totalKjDisplay');
+                const recipeData = recipeSnap.data();
+                const imageUrl = recipeData.imageUrl || "{{ url_for('static', filename='icon/recepty.png') }}";
+                const ingredients = recipeData.ingredients || [];
 
-                if (totalKcalDisplay) {
-                    const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(details.total_kcal);
-                    totalKcalDisplay.textContent = formatNumberForDisplay(kcalNum * factor, kcalUnit, true);
+                // Agregace nutrientů
+                const aggregatedNutrients = {
+                    total_kcal: 0, total_kj: 0, protein: 0, carbs: 0, sugar: 0, fat: 0,
+                    saturated_fat: 0, trans_fat: 0, monounsaturated_fat: 0, polyunsaturated_fat: 0,
+                    cholesterol: 0, fiber: 0, salt: 0, calcium: 0, sodium: 0, water: 0, phe: 0
+                };
+
+                ingredients.forEach(ingredient => {
+                    if (ingredient.nutritionalDetails && typeof ingredient.nutritionalDetails === 'object') {
+                        const amount = parseFloat(ingredient.amount) || 0;
+                        let baseAmount = amount;
+                        if (ingredient.unit === 'kg' || ingredient.unit === 'l') baseAmount *= 1000;
+                        const factor = baseAmount / 100;
+                        
+                        for (const key in aggregatedNutrients) {
+                            if (ingredient.nutritionalDetails[key] && ingredient.nutritionalDetails[key] !== "N/A") {
+                                const { number: valNum } = parseValueAndUnit(ingredient.nutritionalDetails[key]);
+                                if (!isNaN(valNum)) aggregatedNutrients[key] += valNum * factor;
+                            }
+                        }
+                    }
+                });
+
+                const totalKj = aggregatedNutrients.total_kj || (aggregatedNutrients.total_kcal * 4.184);
+                const formattedAggregatedNutrients = {};
+                for (const key in aggregatedNutrients) {
+                    let unit = '';
+                    if (key.includes('kcal')) unit = 'kcal';
+                    else if (key.includes('kj')) unit = 'kJ';
+                    else if (['protein','carbs','sugar','fat','saturated_fat','trans_fat',
+                             'monounsaturated_fat','polyunsaturated_fat','fiber','salt','water','phe'].includes(key)) unit = 'g';
+                    else if (['cholesterol','calcium','sodium'].includes(key)) unit = 'mg';
+                    
+                    formattedAggregatedNutrients[key] = formatNumberForDisplay(aggregatedNutrients[key], unit, key.includes('kcal') || key.includes('kj'));
                 }
-                if (totalKjDisplay) {
-                    const { number: kjNum, unit: kjUnit } = parseValueAndUnit(details.total_kj);
-                    totalKjDisplay.textContent = `Také ${formatNumberForDisplay(kjNum * factor, kjUnit, true)} • Energetická hodnota`;
+
+                let recipeDetailsHtml = `
+            <div class="modal-recipe-header">
+                <img
+                    id="modalHeaderImage"
+                    src="${imageUrl}"
+                    alt="${recipeName}"
+                    class="modal-header-image"
+                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='icon/recepty.png') }}'"
+                />
+                <div class="modal-header-text">
+                    <div id="modalHeaderName" class="modal-header-name">${recipeName}</div>
+                    <div class="energy-display-group">
+                        <div id="totalKcalDisplay" class="energy-header">${formattedAggregatedNutrients.total_kcal}</div>
+                        <div id="totalKjDisplay" class="energy-sub-header">${formatNumberForDisplay(totalKj, 'kJ', true)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-scrollable-container">
+                <div id="nutrientDetailsSection"></div>
+                <h3 class="ingredients-title">Složení receptu:</h3>
+                <div id="recipeIngredientsList"></div>
+            </div>
+        `;
+
+                modalDetailsContent.innerHTML = recipeDetailsHtml;
+
+                
+                // Render nutrientů
+                renderAllNutrientDetails(formattedAggregatedNutrients);
+
+                // Render ingrediencí
+                const ingredientsListEl = document.getElementById('recipeIngredientsList');
+                if (ingredients.length === 0) {
+                    ingredientsListEl.innerHTML = '<p style="text-align: center; color: #888;">Tento recept neobsahuje žádné potraviny.</p>';
+                } else {
+                    ingredients.forEach((ingredient, index) => {
+                        const ingredientItemDiv = document.createElement('div');
+                        ingredientItemDiv.classList.add('food-item', 'food-item-potravina');
+                        const ingPlaceholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}";
+                        let displayImageUrl = ingredient.imageUrl || ingPlaceholderImage;
+                        const { number: kcalNum, unit: kcalUnit } = parseValueAndUnit(ingredient.kcal);
+                        const formattedIngredientKcal = formatNumberForDisplay(kcalNum, kcalUnit, true);
+
+                        ingredientItemDiv.innerHTML = `
+                            <div class="image-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+                                <img src="${displayImageUrl}" alt="${ingredient.foodName}" onerror="this.onerror=null;this.src='${ingPlaceholderImage}'" />
+                                <div class="recipe-icons" style="margin-top: 5px;">
+                                    <img src="{{ url_for('static', filename='icon/editace.png') }}" alt="Upravit" class="recipe-icon edit-icon" data-recipe-id="${recipeId}" data-ingredient-index="${index}" />
+                                    <img src="{{ url_for('static', filename='icon/kos.png') }}" alt="Odstranit" class="recipe-icon delete-icon" data-recipe-id="${recipeId}" data-ingredient-index="${index}" />
+                                </div>
+                            </div>
+                            <div class="food-details">
+                                <h3>${ingredient.foodName}</h3>
+                                <div class="calories-and-type-row">
+                                    <div class="calories-and-type-row">
+                                        <span class="amount-display">Množství:  ${ingredient.amount} ${ingredient.unit}</span>
+                                        <span class="calories-display">Kalorie: ${formattedIngredientKcal}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        ingredientsListEl.appendChild(ingredientItemDiv);
+
+                        // Edit ikonka
+                        const editIcon = ingredientItemDiv.querySelector('.edit-icon');
+                        if (editIcon) {
+                            editIcon.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                currentEditingRecipeId = e.target.dataset.recipeId;
+                                currentEditingIngredientIndex = parseInt(e.target.dataset.ingredientIndex);
+                                const ingredientToEdit = ingredients[currentEditingIngredientIndex];
+                                if (ingredientToEdit) {
+                                    await showDetailsModal(
+                                        ingredientToEdit.slug,
+                                        ingredientToEdit.foodName,
+                                        ingredientToEdit.imageUrl,
+                                        ingredientToEdit.kcal,
+                                        ingredientToEdit.foodType,
+                                        true,
+                                        ingredientToEdit.amount,
+                                        ingredientToEdit.unit,
+                                        ingredientToEdit.nutritionalDetails
+                                    );
+                                } else {
+                                    console.error("Ingredient not found at index:", currentEditingIngredientIndex);
+                                    showCustomNotification("Chyba: Položka receptu k úpravě nebyla nalezena.", 'info');
+                                }
+                            });
+                        }
+
+                        // Delete ikonka
+                        const deleteIcon = ingredientItemDiv.querySelector('.delete-icon');
+                        if (deleteIcon) {
+                            deleteIcon.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const currentRecipeId = e.target.dataset.recipeId;
+                                const ingredientIndex = parseInt(e.target.dataset.ingredientIndex);
+                                const ingredientName = ingredient.foodName;
+                                deleteFoodItemFromRecipe(currentRecipeId, ingredientIndex, ingredientName, recipeName);
+                            });
+                        }
+                    });
                 }
 
-                let nutrientsHtmlContent = '';
+                // Dynamická velikost názvu v hlavičce
+                const modalHeaderImage = document.getElementById('modalHeaderImage');
+                const modalHeaderName = document.getElementById('modalHeaderName');
+                if (modalHeaderImage && modalHeaderName) {
+                    const imageHeight = modalHeaderImage.offsetHeight;
+                    let currentFontSize = imageHeight * 0.25;
+                    modalHeaderName.style.fontSize = `${currentFontSize}px`;
 
-                // Section 1: Main Macronutrients
-                nutrientsHtmlContent += `<div class="nutrient-section">`;
-                // Add separator above Bílkoviny
-                nutrientsHtmlContent += createNutrientRow('Bílkoviny', details.protein, null, 'red', 'main', factor, true);
-                // Add separator above Sacharidy
-                nutrientsHtmlContent += createNutrientRow('Sacharidy', details.carbs, null, 'blue', 'main', factor, true);
-                nutrientsHtmlContent += createNutrientRow('Cukry', details.sugar, null, null, 'nested', factor, false);
-                // Add separator above Tuky
-                nutrientsHtmlContent += createNutrientRow('Tuky', details.fat, null, 'orange', 'main', factor, true);
-                nutrientsHtmlContent += createNutrientRow('Nasycené mastné kyseliny', details.saturated_fat, null, null, 'nested', factor, false);
-                nutrientsHtmlContent += createNutrientRow('Trans mastné kyseliny', details.trans_fat, null, null, 'nested', factor, false);
-                nutrientsHtmlContent += createNutrientRow('Mononenasycené', details.monounsaturated_fat, null, null, 'nested', factor, false);
-                nutrientsHtmlContent += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', factor, false);
-                nutrientsHtmlContent += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', factor, false);
-                nutrientsHtmlContent += `</div>`;
+                    while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) {
+                        currentFontSize -= 0.5;
+                        modalHeaderName.style.fontSize = `${currentFontSize}px`;
+                    }
+                }
 
-                // Section 2: Fiber
-                nutrientsHtmlContent += `<div class="nutrient-section">`;
-                nutrientsHtmlContent += createNutrientRow('Vláknina', details.fiber, null, 'green', 'main', factor, true); // Separator above Vláknina
-                nutrientsHtmlContent += `</div>`;
+            } catch (error) {
+                console.error("Error loading recipe details:", error);
+                modalDetailsContent.innerHTML = `<p class="error-details">Došlo k chybě při načítání detailů receptu: ${error.message}</p>`;
+            }
+        }
 
-                // Section 3: Minerals and Water (normal font, specific size)
-                nutrientsHtmlContent += `<div class="nutrient-section">`;
-                nutrientsHtmlContent += createNutrientRow('Sůl', details.salt, null, null, 'main', factor, true, 'normal', '1.05em'); // Separator above Sůl, normal font, 1.05em
-                nutrientsHtmlContent += createNutrientRow('Vápník', details.calcium, null, null, 'main', factor, false, 'normal', '1.05em');
-                nutrientsHtmlContent += createNutrientRow('Sodík', details.sodium, null, null, 'main', factor, false, 'normal', '1.05em');
-                nutrientsHtmlContent += createNutrientRow('Voda', details.water, null, null, 'main', factor, false, 'normal', '1.05em');
-                nutrientsHtmlContent += createNutrientRow('PHE', details.phe, null, null, 'main', factor, false, 'normal', '1.05em');
-                nutrientsHtmlContent += `</div>`;
+        // --- Barcode Scanner Functions ---
+        let barcodeModal = null;
+        let barcodeVideo = null;
+        let barcodeCanvas = null;
+        let barcodeOverlay = null;
+        let barcodeStatus = null;
+        let stream = null;
+        let currentDeviceId = null;
+        let facingMode = 'environment'; // 'environment' pro zadní kameru, 'user' pro přední
+        let flashEnabled = false;
+        let barcodeDetector = null;
+        let scanInterval = null;
 
-                nutrientDetailsSection.innerHTML = nutrientsHtmlContent;
-                console.log("Nutrients rendered.");
+        // Inicializace skeneru čárových kódů
+        function initBarcodeScanner() {
+            barcodeModal = document.getElementById('barcodeModal');
+            barcodeVideo = document.getElementById('barcodeVideo');
+            barcodeCanvas = document.getElementById('barcodeCanvas');
+            barcodeOverlay = document.getElementById('barcodeOverlay');
+            barcodeStatus = document.getElementById('barcodeStatus');
+            
+            // Event listenery pro modální okno skeneru
+            document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
+            document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
+            document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
+            document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
+            
+            // Event listener pro tlačítko skeneru
+            document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
+        }
+
+        // Odeslání ručně zadaného čárového kódu
+        function submitManualBarcode() {
+            const manualBarcodeInput = document.getElementById('manualBarcodeInput');
+            const barcode = manualBarcodeInput.value.trim();
+            
+            if (barcode) {
+                closeBarcodeScanner();
+                searchByBarcode(barcode);
+            } else {
+                barcodeStatus.textContent = 'Prosím, zadejte čárový kód';
+                barcodeStatus.style.color = 'red';
+            }
+        }
+
+        // Otevření skeneru čárových kódů
+        async function openBarcodeScanner() {
+            barcodeModal.style.display = 'flex';
+            barcodeStatus.textContent = 'Inicializace...';
+            
+            // Zkontrolujeme, zda je API dostupné
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+                barcodeStatus.style.color = 'red';
+                return;
             }
 
+            try {
+                await startCamera();
+                barcodeStatus.textContent = 'Namiřte na čárový kód';
+                startBarcodeScanning();
+            } catch (error) {
+                console.error('Chyba při inicializaci kamery:', error);
+                barcodeStatus.textContent = 'Chyba: ' + error.message;
+                barcodeStatus.style.color = 'red';
+            }
+        }
+
+        // Spuštění kamery
+        async function startCamera() {
+            // Zastavíme existující stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            const constraints = {
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+            
+            // Pokud máme uložené deviceId, použijeme ho
+            if (currentDeviceId) {
+                constraints.video.deviceId = { exact: currentDeviceId };
+            }
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                barcodeVideo.srcObject = stream;
+                barcodeVideo.style.display = 'block';
+                document.getElementById('barcodeUnsupportedMessage').style.display = 'none';
+                document.getElementById('toggleCameraButton').style.display = 'inline-block';
+                document.getElementById('toggleFlashButton').style.display = 'inline-block';
+                barcodeOverlay.style.display = 'block';
+                
+                // Uložíme deviceId pro příště
+                const videoTrack = stream.getVideoTracks()[0];
+                if (videoTrack) {
+                    currentDeviceId = videoTrack.getSettings().deviceId;
+                }
+                
+                // Čekáme na načtení videa
+                return new Promise((resolve) => {
+                    barcodeVideo.onloadedmetadata = () => {
+                        barcodeVideo.play();
+                        resolve();
+                    };
+                });
+            } catch (error) {
+                console.error('Chyba při přístupu ke kameře:', error);
+                // Zobrazíme informační zprávu místo chyby
+                document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+                barcodeVideo.style.display = 'none';
+                document.getElementById('toggleCameraButton').style.display = 'none';
+                document.getElementById('toggleFlashButton').style.display = 'none';
+                barcodeOverlay.style.display = 'none';
+                
+                barcodeStatus.textContent = 'Použijte ruční zadání kódu';
+                throw error;
+            }
+        }
+
+        // Spuštění skenování čárových kódů
+        function startBarcodeScanning() {
+            // Zastavíme existující interval
+            if (scanInterval) {
+                clearInterval(scanInterval);
+            }
+            
+            // Nastavíme interval pro kontrolu čárových kódů
+            scanInterval = setInterval(async () => {
+                if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
+                    try {
+                        // Pro jednoduchost použijeme QuaggaJS jako fallback
+                        const barcodes = await detectBarcodesWithQuagga();
+                        
+                        if (barcodes.length > 0) {
+                            const barcode = barcodes[0].rawValue;
+                            handleBarcodeDetected(barcode);
+                        }
+                    } catch (error) {
+                        console.error('Chyba při detekci čárového kódu:', error);
+                    }
+                }
+            }, 500); // Kontrolujeme každých 500ms
+        }
+
+        // Detekce čárových kódů pomocí QuaggaJS
+        function detectBarcodesWithQuagga() {
+            return new Promise((resolve) => {
+                // Pokud Quagga není k dispozici, vrátíme prázdné pole
+                if (typeof Quagga === 'undefined') {
+                    resolve([]);
+                    return;
+                }
+                
+                const context = barcodeCanvas.getContext('2d');
+                const width = barcodeVideo.videoWidth;
+                const height = barcodeVideo.videoHeight;
+                
+                // Nastavíme velikost canvasu
+                barcodeCanvas.width = width;
+                barcodeCanvas.height = height;
+                
+                // Nakreslíme aktuální snímek videa na canvas
+                context.drawImage(barcodeVideo, 0, 0, width, height);
+                
+                // Získáme imageData z canvasu
+                const imageData = context.getImageData(0, 0, width, height);
+                
+                // Použijeme Quaggu pro detekci čárových kódů
+                Quagga.decodeSingle({
+                    decoder: {
+                        readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'code_128_reader']
+                    },
+                    locate: true,
+                    src: imageData
+                }, function(result) {
+                    if (result && result.codeResult) {
+                        resolve([{ rawValue: result.codeResult.code }]);
+                    } else {
+                        resolve([]);
+                    }
+                });
+            });
+        }
+
+        // Zpracování nalezeného čárového kódu
+        function handleBarcodeDetected(barcode) {
+            console.log('Nalezen čárový kód:', barcode);
+            
+            // Vizuální feedback
+            barcodeOverlay.classList.add('barcode-found');
+            barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+            barcodeStatus.style.color = '#4CAF50';
+            
+            // Zastavíme skenování
+            clearInterval(scanInterval);
+            
+            // Po krátké prodlevě zavřeme skener a vyhledáme
+            setTimeout(() => {
+                closeBarcodeScanner();
+                searchByBarcode(barcode);
+            }, 1000);
+            
+            // Odstraníme animaci po dokončení
+            setTimeout(() => {
+                barcodeOverlay.classList.remove('barcode-found');
+            }, 1500);
+        }
+
+        // Vyhledání podle čárového kódu
+        function searchByBarcode(barcode) {
+            // Nastavíme hodnotu do vyhledávacího pole
+            document.getElementById('query').value = barcode;
+            
+            // Spustíme vyhledávání
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                searchForm.dispatchEvent(submitEvent);
+            }
+        }
+
+        // Přepnutí kamery (přední/zadní)
+        async function toggleCamera() {
+            facingMode = facingMode === 'environment' ? 'user' : 'environment';
+            barcodeStatus.textContent = 'Přepínám kameru...';
+            
+            try {
+                await startCamera();
+                barcodeStatus.textContent = 'Namiřte na čárový kód';
+            } catch (error) {
+                console.error('Chyba při přepínání kamery:', error);
+                barcodeStatus.textContent = 'Chyba: ' + error.message;
+                barcodeStatus.style.color = 'red';
+            }
+        }
+
+        // Přepnutí blesku (pokud je dostupný)
+        async function toggleFlash() {
+            if (!stream) return;
+            
+            const videoTrack = stream.getVideoTracks()[0];
+            if (!videoTrack) return;
+            
+            try {
+                const capabilities = videoTrack.getCapabilities();
+                if (capabilities.torch) {
+                    await videoTrack.applyConstraints({
+                        advanced: [{ torch: !flashEnabled }]
+                    });
+                    flashEnabled = !flashEnabled;
+                    document.getElementById('toggleFlashButton').textContent = 
+                        flashEnabled ? 'Vypnout blesk' : 'Blesk';
+                } else {
+                    barcodeStatus.textContent = 'Blesk není dostupný';
+                    barcodeStatus.style.color = 'orange';
+                    setTimeout(() => {
+                        if (barcodeModal.style.display === 'flex') {
+                            barcodeStatus.textContent = 'Namiřte na čárový kód';
+                            barcodeStatus.style.color = '#666';
+                        }
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Chyba při ovládání blesku:', error);
+            }
+        }
+
+        // Zavření skeneru čárových kódů
+        function closeBarcodeScanner() {
+            // Zastavíme skenování
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            
+            // Zastavíme stream videa
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Zastavíme video
+            if (barcodeVideo) {
+                barcodeVideo.srcObject = null;
+            }
+            
+            // Skryjeme modální okno
+            barcodeModal.style.display = 'none';
+            
+            // Obnovíme výchozí zobrazení
+            document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+            barcodeVideo.style.display = 'none';
+            document.getElementById('toggleCameraButton').style.display = 'none';
+            document.getElementById('toggleFlashButton').style.display = 'none';
+            barcodeOverlay.style.display = 'none';
+        }
+
+        initializeFirebase();
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            console.log('DOMContentLoaded fired.');
 
             // --- Logika vyhledávání potravin ---
-            const searchForm = document.getElementById('searchForm'); // Get the form element
-            if (searchForm) { // Check if the form element exists
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
                 searchForm.addEventListener('submit', async function(event) {
-                    console.log('Search form submit event fired.'); // Přidáno pro diagnostiku
+                    console.log('Search form submit event fired.');
                     event.preventDefault();
 
                     const query = document.getElementById('query').value;
@@ -665,31 +1543,35 @@
                     }
                 });
             } else {
-                console.error('Search form element with ID "searchForm" not found.'); // Přidáno pro diagnostiku
+                console.error('Search form element with ID "searchForm" not found.');
             }
 
-
             function appendFoodItem(item) {
+                // Filter out recipes - only show 'potravina'
+                if (item.food_type !== 'potravina') {
+                    return;
+                }
+
                 const resultsDiv = document.getElementById('results');
                 const foodItemDiv = document.createElement('div');
                 foodItemDiv.classList.add('food-item');
 
-                // Add class based on food type for coloring the item background
+                // Keep class for styling if needed, even if only 'potravina' is shown
                 if (item.food_type === 'potravina') {
                     foodItemDiv.classList.add('food-item-potravina');
-                } else if (item.food_type === 'recept') {
-                    foodItemDiv.classList.add('food-item-recept');
                 }
-
+                // Removed else if for 'recept' as it's filtered out
 
                 if (item.slug) {
                     foodItemDiv.dataset.slug = item.slug;
-                    foodItemDiv.dataset.foodType = item.food_type; // Uložíme food_type
+                    foodItemDiv.dataset.foodType = item.food_type;
+                    // The click listener now only opens the modal
                     foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url, item.calories, item.food_type));
                 }
 
                 let imageHtml = '';
-                const placeholderImage = 'https://placehold.co/60x60/cccccc/333333?text=Bez+obr.';
+                // Updated placeholder image path
+                const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}";
 
                 if (item.image_url) {
                     imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
@@ -697,24 +1579,22 @@
                      imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
                 }
 
-                let foodTypeLabelHtml = '';
-                if (item.food_type) {
-                    let labelClass = '';
-                    if (item.food_type === 'potravina') {
-                        labelClass = 'potravina-label';
-                    } else if (item.food_type === 'recept') {
-                        labelClass = 'recept-label';
-                    }
-                    foodTypeLabelHtml = `<div class="food-type-label ${labelClass}">${item.food_type}</div>`;
-                }
+                // Parse and reformat item.calories to ensure 1 decimal place
+                const { number: caloriesNum, unit: caloriesUnit } = parseValueAndUnit(item.calories);
+                const formattedCalories = formatNumberForDisplay(caloriesNum, caloriesUnit, true); // Pass true for isEnergyValue
 
+                // Změněná struktura pro umístění kalorií pod obrázek a labelu vedle názvu
                 let itemContent = `
-                    ${imageHtml}
+                    <div class="image-wrapper">
+                        ${imageHtml}
+                    </div>
                     <div class="food-details">
                         <h3>${item.name}</h3>
-                        <p><strong>Kalorie:</strong> ${item.calories}</p>
+                        <div class="calories-and-type-row">
+                            <p class="calories-display">Kalorie: ${formattedCalories}</p>
+                            <!-- Removed foodTypeLabelHtml -->
+                        </div>
                     </div>
-                    ${foodTypeLabelHtml}
                 `;
                 foodItemDiv.innerHTML = itemContent;
                 resultsDiv.appendChild(foodItemDiv);
@@ -725,24 +1605,202 @@
             const closeButton = detailsModal.querySelector('.close-button');
             const modalDetailsContent = document.getElementById('modalDetailsContent');
 
+            // References to new modals
+            const createRecipeModal = document.getElementById('createRecipeModal');
+            const newRecipeNameInput = document.getElementById('newRecipeNameInput');
+            const confirmCreateRecipeButton = document.getElementById('confirmCreateRecipeButton');
+            const cancelCreateRecipeButton = document.getElementById('cancelCreateRecipeButton');
+
+            const selectRecipeModal = document.getElementById('selectRecipeModal');
+            const existingRecipesList = document.getElementById('existingRecipesList');
+            // const cancelSelectRecipeButton = document.getElementById('cancelSelectRecipeButton'); // Removed
+            // const addNewRecipeButton = document.getElementById('addNewRecipeButton'); // Removed
+
+            // References to settings modal elements
+            const settingsIcon = document.getElementById('settingsIcon');
+            const settingsModal = document.getElementById('settingsModal');
+            const closeSettingsModalButton = document.getElementById('closeSettingsModal');
+            const confirmRecipeCreationToggle = document.getElementById('confirmRecipeCreationToggle'); // New toggle
+            const confirmFoodAdditionToggle = document.getElementById('confirmFoodAdditionToggle'); // New toggle
+            const confirmDeleteRecipeToggle = document.getElementById('confirmDeleteRecipeToggle'); // New toggle for delete confirmation
+            const confirmDeleteRecipeItemToggle = document.getElementById('confirmDeleteRecipeItemToggle'); // NEW toggle
+            const confirmSaveChangesToggle = document.getElementById('confirmSaveChangesToggle'); // NEW
+            const confirmRecipeSaveSuccessToggle = document.getElementById('confirmRecipeSaveSuccessToggle'); // NEW
+
+            // currentFoodItemData is now in global scope
+            // let currentFoodItemData = null; // To store data of the food item being processed
+
+            // Event listener for the toggle switch in the settings modal for recipe creation
+            if (confirmRecipeCreationToggle) {
+                confirmRecipeCreationToggle.addEventListener('change', () => {
+                    userSettings.confirmRecipeCreation = confirmRecipeCreationToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Potvrzení vytvoření receptu povoleno:", userSettings.confirmRecipeCreation);
+                });
+            }
+
+            // Event listener for the toggle switch in the settings modal for food addition
+            if (confirmFoodAdditionToggle) {
+                confirmFoodAdditionToggle.addEventListener('change', () => {
+                    userSettings.confirmFoodAddition = confirmFoodAdditionToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Potvrzení přidání potraviny povoleno:", userSettings.confirmFoodAddition);
+                });
+            }
+
+            // Event listener for the toggle switch in the settings modal for delete confirmation
+            if (confirmDeleteRecipeToggle) {
+                confirmDeleteRecipeToggle.addEventListener('change', () => {
+                    userSettings.confirmDeleteRecipe = confirmDeleteRecipeToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Potvrzení smazání receptu povoleno:", userSettings.confirmDeleteRecipe);
+                });
+            }
+
+            // NEW: Event listener for the toggle switch in the settings modal for recipe item deletion
+            if (confirmDeleteRecipeItemToggle) {
+                confirmDeleteRecipeItemToggle.addEventListener('change', () => {
+                    userSettings.confirmDeleteRecipeItem = confirmDeleteRecipeItemToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Potvrzení smazání položky povoleno:", userSettings.confirmDeleteRecipeItem);
+                });
+            }
+
+            // NEW: Event listener for the toggle switch in the settings modal for save changes confirmation
+            if (confirmSaveChangesToggle) {
+                confirmSaveChangesToggle.addEventListener('change', () => {
+                    userSettings.confirmSaveChanges = confirmSaveChangesToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Potvrzení uložení změn povoleno:", userSettings.confirmSaveChanges);
+                });
+            }
+
+            // NEW: Event listener for the toggle switch in the settings modal for successful save notification
+            if (confirmRecipeSaveSuccessToggle) {
+                confirmRecipeSaveSuccessToggle.addEventListener('change', () => {
+                    userSettings.confirmRecipeSaveSuccess = confirmRecipeSaveSuccessToggle.checked;
+                    saveUserSettings(); // Save to Firestore
+                    console.log("Oznámení úspěšného uložení změn povoleno:", userSettings.confirmRecipeSaveSuccess);
+                });
+            }
+
+            // New toggle for successful recipe deletion notification
+            const confirmRecipeDeletionSuccessToggle = document.getElementById('confirmRecipeDeletionSuccessToggle');
+            if (confirmRecipeDeletionSuccessToggle) {
+                confirmRecipeDeletionSuccessToggle.addEventListener('change', () => {
+                    userSettings.confirmRecipeDeletionSuccess = confirmRecipeDeletionSuccessToggle.checked;
+                    saveUserSettings();
+                    console.log("Potvrzení úspěšného smazání povoleno:", userSettings.confirmRecipeDeletionSuccess);
+                });
+            }
+
+            // New toggle for recipe deletion error notification
+            const confirmRecipeDeletionErrorToggle = document.getElementById('confirmRecipeDeletionErrorToggle');
+            if (confirmRecipeDeletionErrorToggle) {
+                confirmRecipeDeletionErrorToggle.addEventListener('change', () => {
+                    userSettings.confirmRecipeDeletionError = confirmRecipeDeletionErrorToggle.checked;
+                    saveUserSettings();
+                    console.log("Potvrzení chyby smazání povoleno:", userSettings.confirmRecipeDeletionError);
+                });
+            }
+
             if (closeButton) {
                 closeButton.addEventListener('click', () => {
                     detailsModal.style.display = 'none';
+                    // Reset current editing context when closing the modal
+                    currentEditingRecipeId = null;
+                    currentEditingIngredientIndex = null;
                 });
             }
 
             window.addEventListener('click', (event) => {
                 if (event.target == detailsModal) {
                     detailsModal.style.display = 'none';
+                    // Reset current editing context when closing the modal
+                    currentEditingRecipeId = null;
+                    currentEditingIngredientIndex = null;
+                }
+                if (event.target == settingsModal) { // Close settings modal if clicked outside
+                    settingsModal.style.display = 'none';
+                }
+                // Close custom notification modal if clicked outside, unless it's a confirmation type
+                if (event.target == customNotificationModal && customNotificationModal.style.display === 'flex') {
+                    // If it's a confirmation, don't close on outside click.
+                    // This requires a way to know if it's a confirmation.
+                    // For now, let's assume all custom notifications can be closed by outside click.
+                    // A more robust solution would be to add a data attribute to the modal when it's a confirmation.
+                    customNotificationModal.style.display = 'none';
+                }
+                // Close selectRecipeModal if clicked outside
+                if (event.target == selectRecipeModal) {
+                    selectRecipeModal.style.display = 'none';
+                }
+                // Close barcodeModal if clicked outside
+                if (event.target == barcodeModal) {
+                    closeBarcodeScanner();
                 }
             });
 
-            async function showDetailsModal(slug, name, imageUrl, initialCaloriesString, foodType) {
-                console.log("showDetailsModal called for slug:", slug, "name:", name, "foodType:", foodType);
-                detailsModal.style.display = 'flex';
-                modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily pro ${name}...</p>`;
+            // Close new modals
+            document.getElementById('closeCreateRecipeModal').addEventListener('click', () => {
+                createRecipeModal.style.display = 'none';
+            });
 
-                try {
+            // Event listener for confirming new recipe creation
+            if (confirmCreateRecipeButton) { // Add check for existence
+                confirmCreateRecipeButton.onclick = async () => {
+                    const recipeName = newRecipeNameInput.value.trim();
+                    if (recipeName) {
+                        await createNewRecipe(recipeName, currentFoodItemData);
+                        createRecipeModal.style.display = 'none';
+                    } else {
+                        showCustomNotification("Prosím, zadejte název receptu.", 'validationError');
+                    }
+                };
+            }
+
+            // Event listener for canceling new recipe creation
+            if (cancelCreateRecipeButton) { // Add check for existence
+                cancelCreateRecipeButton.addEventListener('click', () => {
+                    createRecipeModal.style.display = 'none';
+                });
+            }
+
+            document.getElementById('closeSelectRecipeModal').addEventListener('click', () => {
+                selectRecipeModal.style.display = 'none';
+            });
+
+            // Settings icon click listener
+            if (settingsIcon) {
+                settingsIcon.addEventListener('click', () => {
+                    settingsModal.style.display = 'flex';
+                });
+            }
+
+            // Close settings modal button
+            if (closeSettingsModalButton) {
+                closeSettingsModalButton.addEventListener('click', () => {
+                    settingsModal.style.display = 'none';
+                });
+            }
+
+        }); // End of DOMContentLoaded
+
+        async function showDetailsModal(slug, name, imageUrl, initialCaloriesString, foodType, isEditingRecipeIngredient = false, initialAmount = 100, initialUnit = 'g', originalNutritionalDetails = null) {
+            console.log("showDetailsModal called for slug:", slug, "name:", name, "foodType:", foodType, "isEditingRecipeIngredient:", isEditingRecipeIngredient);
+            modalDetailsContent.classList.remove('modal-recipe-container'); // Odebere třídu pro potraviny
+            document.getElementById('modalDetailsContent').classList.remove('modal-recipe-container');
+            detailsModal.style.display = 'flex'; // Ensure modal is visible
+            modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily pro ${name}...</p>`;
+
+            try {
+                let details;
+                if (isEditingRecipeIngredient && originalNutritionalDetails) {
+                    // If editing an ingredient, use the provided nutritional details directly
+                    details = originalNutritionalDetails;
+                    console.log("Using provided nutritional details for editing:", details);
+                } else {
+                    // Otherwise, fetch details from the server
                     const response = await fetch('/get_details', {
                         method: 'POST',
                         headers: {
@@ -758,7 +1816,7 @@
                         let rawResponseText = await response.text();
                         console.error("Raw server response (not OK):", rawResponseText);
                         try {
-                            const errorData = JSON.parse(rawResponseText); // Try parsing as JSON
+                            const errorData = JSON.parse(rawResponseText);
                             if (errorData && errorData.error) {
                                 errorMessage = `Chyba ze serveru: ${errorData.error}`;
                             } else {
@@ -771,141 +1829,212 @@
                         modalDetailsContent.innerHTML = `<p class="error-details">${errorMessage}</p>`;
                         return;
                     }
+                    details = await response.json();
+                    console.log("Received details JSON:", details);
+                }
 
-                    const details = await response.json();
-                    console.log("Received details JSON:", details); // Log the received JSON
-                    let originalDetailsData = details;
+                let originalDetailsData = details;
 
-                    if (details.error) {
-                        modalDetailsContent.innerHTML = `<p class="error-details">Chyba ze serveru: ${details.error}</p>`;
-                    } else {
-                        const placeholderImage = 'https://placehold.co/120x120/cccccc/333333?text=Bez+obr.';
-                        let displayImageUrl = imageUrl || placeholderImage;
+                if (details.error) {
+                    modalDetailsContent.innerHTML = `<p class="error-details">Chyba ze serveru: ${details.error}</p>`;
+                } else {
+                    // Updated placeholder image path
+                    const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}";
+                    let displayImageUrl = imageUrl || placeholderImage;
 
-                        const { unit: initialUnitForTypeDetection } = parseValueAndUnit(initialCaloriesString);
-                        const isLiquidFood = initialUnitForTypeDetection.toLowerCase().includes('ml');
+                    const { unit: initialUnitForTypeDetection } = parseValueAndUnit(initialCaloriesString);
+                    const isLiquidFood = initialUnitForTypeDetection.toLowerCase().includes('ml');
 
-                        let detailsHtml = `
-                            <div class="modal-header-content">
-                                <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
-                                <div id="modalHeaderName" class="modal-header-name">${name}</div>
+                    let actionButtonsHtml = '';
+                    if (isEditingRecipeIngredient) {
+                        actionButtonsHtml = `
+                            <div class="modal-action-buttons">
+                                <button id="saveChangesButton" style="background-color: #28a745;">Uložit změny</button>
+                                <button id="discardChangesButton" style="background-color: #dc3545;">Zahodit změny</button>
                             </div>
-                            <div class="interactive-section">
-                                <div class="amount-controls">
-                                    <input type="number" id="amountInput" value="100" min="0" step="1" class="amount-input">
-                                    <select id="unitSelect" class="unit-select">
-                                        <!-- Options will be dynamically added here -->
-                                    </select>
-                                </div>
-                                <div class="energy-display-group">
-                                    <div id="totalKcalDisplay" class="energy-header"></div>
-                                    <div id="totalKjDisplay" class="energy-sub-header"></div>
-                                </div>
-                            </div>
-                            <div id="nutrientDetailsSection">
-                                <!-- Nutrients will be rendered here by renderAllNutrientDetails -->
-                            </div>
-                            ${details.source_url ? `<p style="text-align: center; margin-top: 20px;"><a href="${details.source_url}" target="_blank">Zobrazit na KalorickéTabulky.cz</a></p>` : ''}
                         `;
-                        modalDetailsContent.innerHTML = detailsHtml;
-
-                        const amountInput = document.getElementById('amountInput');
-                        const unitSelect = document.getElementById('unitSelect');
-
-                        unitSelect.innerHTML = '';
-                        if (isLiquidFood) {
-                            unitSelect.add(new Option('ml', 'ml'));
-                            unitSelect.add(new Option('l', 'l'));
-                            unitSelect.value = 'ml';
-                        } else {
-                            unitSelect.add(new Option('g', 'g'));
-                            unitSelect.add(new Option('kg', 'kg'));
-                            unitSelect.value = 'g';
-                        }
-
-                        const updateDisplay = () => {
-                            const currentAmount = parseFloat(amountInput.value) || 0;
-                            const selectedUnit = unitSelect.value;
-                            let baseAmount = currentAmount;
-
-                            if (selectedUnit === 'kg') {
-                                baseAmount = currentAmount * 1000;
-                            } else if (selectedUnit === 'l') {
-                                baseAmount = currentAmount * 1000;
-                            }
-
-                            let factor = baseAmount / 100;
-
-                            renderAllNutrientDetails(originalDetailsData, factor);
-                        };
-
-                        amountInput.addEventListener('input', updateDisplay);
-                        unitSelect.addEventListener('change', updateDisplay);
-
-                        // Initial render of nutrients
-                        updateDisplay(); // Call updateDisplay to render with initial 100g/ml
-
-                        const modalHeaderImage = document.getElementById('modalHeaderImage');
-                        const modalHeaderName = document.getElementById('modalHeaderName');
-
-                        if (modalHeaderImage && modalHeaderName) {
-                            const imageHeight = modalHeaderImage.offsetHeight;
-                            let currentFontSize = imageHeight * 0.25;
-                            modalHeaderName.style.fontSize = `${currentFontSize}px`;
-
-                            while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) {
-                                currentFontSize -= 0.5;
-                                modalHeaderName.style.fontSize = `${currentFontSize}px`;
-                            }
-                        }
+                    } else {
+                        actionButtonsHtml = `
+                            <div class="modal-action-buttons">
+                                <button id="addToRecipeButton">Přidat do receptu</button>
+                                <button id="createAndAddRecipeButton">Vytvořit recept a přidat</button>
+                            </div>
+                        `;
                     }
 
-                } catch (error) {
-                    console.error('Chyba při získávání detailů:', error);
-                    modalDetailsContent.innerHTML = `<p class="error-details">Došlo k chybě při komunikaci se serverem pro detaily.</p>`;
+                    let detailsHtml = `
+                        <div class="modal-header-content">
+                            <img id="modalHeaderImage" src="${displayImageUrl}" alt="${name}" class="modal-header-image" onerror="this.onerror=null;this.src='${placeholderImage}'" />
+                            <div id="modalHeaderName" class="modal-header-name">${name}</div>
+                        </div>
+                        ${actionButtonsHtml}
+                        <div class="interactive-section">
+                            <div class="amount-controls">
+                                <input type="number" id="amountInput" value="${initialAmount}" min="0" step="1" class="amount-input">
+                                <select id="unitSelect" class="unit-select">
+                                    <!-- Options will be dynamically added here -->
+                                </select>
+                            </div>
+                            <div class="energy-display-group">
+                                <div id="totalKcalDisplay" class="energy-header"></div>
+                                <div id="totalKjDisplay" class="energy-sub-header"></div>
+                            </div>
+                        </div>
+                        <div id="nutrientDetailsSection">
+                            <!-- Nutrients will be rendered here by renderAllNutrientDetails -->
+                        </div>
+                        ${details.source_url ? `<p style="text-align: center; margin-top: 20px;"><a href="${details.source_url}" target="_blank">Zobrazit na KalorickéTabulky.cz</a></p>` : ''}
+                    `;
+                    modalDetailsContent.innerHTML = detailsHtml;
+
+                    // Re-get references to elements after innerHTML is set
+                    const amountInput = document.getElementById('amountInput');
+                    const unitSelect = document.getElementById('unitSelect');
+                    const addToRecipeButton = document.getElementById('addToRecipeButton'); // May be null
+                    const createAndAddRecipeButton = document.getElementById('createAndAddRecipeButton'); // May be null
+                    const saveChangesButton = document.getElementById('saveChangesButton'); // May be null
+                    const discardChangesButton = document.getElementById('discardChangesButton'); // May be null
+
+                    unitSelect.innerHTML = '';
+                    if (isLiquidFood) {
+                        unitSelect.add(new Option('ml', 'ml'));
+                        unitSelect.add(new Option('l', 'l'));
+                        unitSelect.value = initialUnit;
+                    } else {
+                        unitSelect.add(new Option('g', 'g'));
+                        unitSelect.add(new Option('kg', 'kg'));
+                        unitSelect.value = initialUnit;
+                    }
+
+                    const updateDisplay = () => {
+                        const currentAmount = parseFloat(amountInput.value) || 0;
+                        const selectedUnit = unitSelect.value;
+                        let baseAmount = currentAmount;
+
+                        if (selectedUnit === 'kg') {
+                            baseAmount = currentAmount * 1000;
+                        } else if (selectedUnit === 'l') {
+                            baseAmount = currentAmount * 1000;
+                        }
+
+                        let factor = baseAmount / 100;
+
+                        renderAllNutrientDetails(originalDetailsData, factor);
+
+                        // Update currentFoodItemData with the latest calculated values for saving/adding
+                        currentFoodItemData = {
+                            foodName: name,
+                            slug: slug,
+                            imageUrl: displayImageUrl,
+                            foodType: foodType,
+                            amount: currentAmount,
+                            unit: selectedUnit,
+                            kcal: document.getElementById('totalKcalDisplay').textContent, // Store the calculated kcal
+                            nutritionalDetails: originalDetailsData // Store the full nutritional details
+                        };
+                    };
+
+                    amountInput.addEventListener('input', updateDisplay);
+                    unitSelect.addEventListener('change', updateDisplay);
+
+                    updateDisplay(); // Initial display update
+
+                    // Event listeners for buttons
+                    if (addToRecipeButton) {
+                        addToRecipeButton.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            console.log('Přidat do receptu clicked for:', name);
+                            if (!isAuthReady || !userId) {
+                                showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
+                                return;
+                            }
+                            await loadUserRecipes(true); // Load recipes before showing selection modal, pass true for adding
+                            detailsModal.style.display = 'none'; // Hide details modal
+                            selectRecipeModal.style.display = 'flex'; // Show select recipe modal
+                        });
+                    }
+                    if (createAndAddRecipeButton) {
+                        createAndAddRecipeButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            console.log('Vytvořit recept a přidat clicked for:', name);
+                            if (!isAuthReady || !userId) {
+                                showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
+                                return;
+                            }
+                            detailsModal.style.display = 'none'; // Hide details modal
+                            createRecipeModal.style.display = 'flex'; // Show create recipe modal
+                            newRecipeNameInput.value = ''; // Clear input
+                            newRecipeNameInput.focus();
+                        });
+                    }
+
+                    if (saveChangesButton) {
+                        saveChangesButton.addEventListener('click', async () => {
+                            if (currentEditingRecipeId && currentEditingIngredientIndex !== null) {
+                                await updateFoodItemInRecipe(currentEditingRecipeId, currentEditingIngredientIndex, currentFoodItemData);
+                                // The modal closing and recipe details reloading is now handled within updateFoodItemInRecipe's success callback
+                            } else {
+                                showCustomNotification("Chyba: Nelze uložit změny. Chybí kontext úpravy.", 'info');
+                            }
+                        });
+                    }
+
+                    if (discardChangesButton) {
+                        discardChangesButton.addEventListener('click', async () => {
+                            detailsModal.style.display = 'none';
+                            // Optionally, reload the original recipe details if needed
+                            if (currentEditingRecipeId) {
+                                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, currentEditingRecipeId);
+                                const recipeSnap = await getDoc(recipeDocRef);
+                                if (recipeSnap.exists()) {
+                                    await showRecipeDetailsModal(currentEditingRecipeId, recipeSnap.data().name);
+                                }
+                            }
+                            // Reset current editing context
+                            currentEditingRecipeId = null;
+                            currentEditingIngredientIndex = null;
+                        });
+                    }
+
+                    const modalHeaderImage = document.getElementById('modalHeaderImage');
+                    const modalHeaderName = document.getElementById('modalHeaderName');
+
+                    if (modalHeaderImage && modalHeaderName) {
+                        const imageHeight = modalHeaderImage.offsetHeight;
+                        let currentFontSize = imageHeight * 0.25;
+                        modalHeaderName.style.fontSize = `${currentFontSize}px`;
+
+                        while ((modalHeaderName.scrollWidth > modalHeaderName.clientWidth || modalHeaderName.scrollHeight > modalHeaderName.clientHeight) && currentFontSize > 10) {
+                            currentFontSize -= 0.5;
+                            modalHeaderName.style.fontSize = `${currentFontSize}px`;
+                        }
+                    }
                 }
+
+            } catch (error) {
+                console.error('Chyba při získávání detailů:', error);
+                modalDetailsContent.innerHTML = `<p class="error-details">Došlo k chybě při komunikaci se serverem pro detaily.</p>`;
             }
-        });
+        }
 
         // --- Logika pro tlačítko "Recepty" a modální okno s možnostmi receptů ---
         const recipesButton = document.getElementById('recipesButton');
-        const recipeOptionsModal = document.getElementById('recipeOptionsModal');
-        const closeRecipeOptionsModalButton = document.getElementById('closeRecipeOptionsModal');
 
-        if (recipesButton && recipeOptionsModal && closeRecipeOptionsModalButton) {
-            recipesButton.addEventListener('click', () => {
-                recipeOptionsModal.style.display = 'flex';
-            });
-
-            closeRecipeOptionsModalButton.addEventListener('click', () => {
-                recipeOptionsModal.style.display = 'none';
-            });
-
-            window.addEventListener('click', (event) => {
-                if (event.target == recipeOptionsModal) {
-                    recipeOptionsModal.style.display = 'none';
+        // Modified recipesButton listener
+        if (recipesButton) {
+            recipesButton.addEventListener('click', async () => {
+                if (!isAuthReady || !userId) {
+                    showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
+                    return;
                 }
-            });
-
-            // Add event listeners for the recipe option buttons (currently just console logs)
-            document.getElementById('createRecipe').addEventListener('click', () => {
-                console.log('Vytvořit nový recept clicked');
-                // Implement logic to create new recipe
-                recipeOptionsModal.style.display = 'none'; // Close modal after click
-            });
-
-            document.getElementById('editRecipe').addEventListener('click', () => {
-                console.log('Upravit stávající recept clicked');
-                // Implement logic to edit existing recipe
-                recipeOptionsModal.style.display = 'none'; // Close modal after click
-            });
-
-            document.getElementById('viewRecipes').addEventListener('click', () => {
-                console.log('Zobrazit seznam receptů clicked');
-                // Implement logic to show recipe list
-                recipeOptionsModal.style.display = 'none'; // Close modal after click
+                await loadUserRecipes(); // Load recipes when "Recepty" button is clicked
+                selectRecipeModal.style.display = 'flex'; // Show the select recipe modal directly
             });
         }
+
     </script>
+    
+    <!-- Load QuaggaJS for barcode scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 </body>
 </html>
