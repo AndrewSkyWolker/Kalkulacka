@@ -8,8 +8,6 @@ import re
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import time
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # Načtení proměnných prostředí ze souboru .env
 load_dotenv()
@@ -69,29 +67,6 @@ except Exception as e:
     print(f"Neočekávaná chyba při zpracování Firebase konfigurace: {e}")
     firebase_config_json_for_frontend = '{}'
 
-# Přidejte tuto funkci pro vytvoření session s PythonAnywhere proxy
-def create_pythonanywhere_session():
-    session = requests.Session()
-    
-    # Configure retries
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=0.5,
-        status_forcelist=[429, 500, 502, 503, 504],
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    
-    # PythonAnywhere specific proxy settings
-    session.proxies = {
-        'http': os.environ.get('HTTP_PROXY', ''),
-        'https': os.environ.get('HTTPS_PROXY', ''),
-    }
-    
-    return session
-
-
 
 @app.route('/')
 def index():
@@ -129,7 +104,7 @@ def search_food():
 
             for attempt in range(max_retries):
                 try:
-                    autocomplete_response = create_pythonanywhere_session().get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
+                    autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
                     autocomplete_response.raise_for_status()
                     break
                 except requests.exceptions.RequestException as e:
@@ -137,7 +112,7 @@ def search_food():
                         yield json.dumps({"error": f"Chyba při komunikaci s API: {str(e)}"}) + '\n'
                         return
                     time.sleep(retry_delay)
-
+            autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
             autocomplete_response.raise_for_status()
             autocomplete_data = autocomplete_response.json()
 
