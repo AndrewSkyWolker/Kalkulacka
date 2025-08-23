@@ -4,3 +4,4 @@ gunicorn
 requests
 urljoin
 gunicorn
+python-dotenv
