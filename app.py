@@ -1,11 +1,18 @@
 # app.py - Backend aplikace
-from flask import Flask, render_template, request, jsonify, Response
-from bs4 import BeautifulSoup, Tag, NavigableString
+import os
 import requests
-import time
+from flask import Flask, render_template, request, jsonify, Response
+from dotenv import load_dotenv
 import json
 import re
-from urllib.parse import urljoin # Import urljoin
+from urllib.parse import urljoin
+from bs4 import BeautifulSoup
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+# Načtení proměnných prostředí ze souboru .env
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -21,10 +28,78 @@ DEFAULT_HEADERS = {
     'Referer': 'https://www.kaloricketabulky.cz/'
 }
 
+# Získání Firebase konfiguračních proměnných z prostředí
+app_id = os.getenv('__APP_ID', 'default-app-id')
+firebase_config_raw = os.getenv('__FIREBASE_CONFIG', '{}')
+
+# Zpracování firebase_config_raw pro zajištění platného JSONu
+firebase_config_json_for_frontend = '{}'
+try:
+    # Nejprve odstraníme vnější jednoduché uvozovky, pokud existují
+    cleaned_config_string = firebase_config_raw
+    if cleaned_config_string.startswith("'") and cleaned_config_string.endswith("'"):
+        cleaned_config_string = cleaned_config_string[1:-1]
+
+    # Nahraďte neuzavřené klíče uvozovkami a zajistěte, aby hodnoty řetězců byly v dvojitých uvozovkách
+    # Regex pro přidání uvozovek kolem klíčů, které nejsou již uzavřeny
+    temp_json_string = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned_config_string)
+
+    # Nahraďte jednoduché uvozovky u hodnot řetězců dvojitými uvozovkami
+    temp_json_string = re.sub(r"'([^']*)'", r'"\1"', temp_json_string)
+
+    # Zkontrolujte a případně obalte celý řetězec do složených závorek, pokud to není platný JSON objekt
+    if not temp_json_string.strip().startswith('{') or not temp_json_string.strip().endswith('}'):
+        # Pokud řetězec nezačíná a nekončí složenými závorkami, přidejte je
+        if temp_json_string.strip() != "": # Zabraňte obalení prázdného řetězce
+            temp_json_string = "{" + temp_json_string + "}"
+
+    # Nyní se pokuste parsovat (doufejme) platný JSON řetězec
+    firebase_config_dict = json.loads(temp_json_string)
+
+    # Zkontrolujte, zda jsou klíče 'apiKey' a 'projectId' přítomny a nejsou prázdné
+    if not firebase_config_dict.get('projectId') or not firebase_config_dict.get('apiKey'):
+        print("Upozornění: Chybí projectId nebo apiKey ve Firebase konfiguraci. Používám prázdnou konfiguraci.")
+        firebase_config_json_for_frontend = '{}'
+    else:
+        firebase_config_json_for_frontend = json.dumps(firebase_config_dict)
+except json.JSONDecodeError as e:
+    print(f"Chyba při dekódování JSON Firebase konfigurace: {e}")
+    firebase_config_json_for_frontend = '{}'
+except Exception as e:
+    print(f"Neočekávaná chyba při zpracování Firebase konfigurace: {e}")
+    firebase_config_json_for_frontend = '{}'
+
+# Přidejte tuto funkci pro vytvoření session s PythonAnywhere proxy
+def create_pythonanywhere_session():
+    session = requests.Session()
+    
+    # Configure retries
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
+    # PythonAnywhere specific proxy settings
+    session.proxies = {
+        'http': os.environ.get('HTTP_PROXY', ''),
+        'https': os.environ.get('HTTPS_PROXY', ''),
+    }
+    
+    return session
+
+
+
 @app.route('/')
 def index():
     """Vykreslí hlavní HTML stránku aplikace."""
-    return render_template('index.html')
+    # Předáme Firebase konfiguraci a app_id do šablony
+    return render_template('index.html',
+                           app_id=app_id,
+                           firebase_config_json=firebase_config_json_for_frontend)
 
 @app.route('/search', methods=['POST'])
 def search_food():
@@ -32,7 +107,12 @@ def search_food():
     Zpracovává vyhledávací požadavek z frontendu a streamuje výsledky.
     Nejprve volá autocomplete API a poté se pokouší scrapovat obrázky z detailních stránek potravin nebo receptů.
     """
-    query = request.form.get('query')
+    # Přidejte podporu pro přímé předání názvu bez formuláře
+    if request.is_json:
+        query = request.json.get('query')
+    else:
+        query = request.form.get('query')
+    
     if not query:
         return jsonify({"error": "Prosím, zadejte hledaný výraz."}), 400
 
@@ -42,8 +122,22 @@ def search_food():
             params = {'query': query}
 
             # Krok 1: Vyhledání pomocí autocomplete API
-            time.sleep(0.5)
-            autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
+            # time.sleep(0.5)
+            # Přidejte timeout a opakování při chybě:
+            max_retries = 3
+            retry_delay = 0.5  # sekundy
+
+            for attempt in range(max_retries):
+                try:
+                    autocomplete_response = create_pythonanywhere_session().get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
+                    autocomplete_response.raise_for_status()
+                    break
+                except requests.exceptions.RequestException as e:
+                    if attempt == max_retries - 1:
+                        yield json.dumps({"error": f"Chyba při komunikaci s API: {str(e)}"}) + '\n'
+                        return
+                    time.sleep(retry_delay)
+
             autocomplete_response.raise_for_status()
             autocomplete_data = autocomplete_response.json()
 
@@ -55,7 +149,7 @@ def search_food():
             for item in autocomplete_data:
                 food_name = item.get("title", "Neznámá potravina")
                 food_value = item.get('value', 'N/A')
-                
+
                 is_liquid = False
                 liquid_keywords = ['mléko', 'kefír', 'jogurtový nápoj', 'džus', 'šťáva', 'voda', 'nápoj', 'limonáda', 'sirup', 'polévka', 'vývar']
                 for keyword in liquid_keywords:
@@ -68,9 +162,9 @@ def search_food():
                     energy_unit_suffix = "kcal/100 ml"
                 else:
                     energy_unit_suffix = "kcal/100 g"
-                
+
                 food_calories = f"{food_value} {energy_unit_suffix}"
-                
+
                 food_has_image = item.get('hasImage', False)
                 food_url_slug = item.get('url') # This already contains /potraviny/ or /recepty/
 
@@ -79,11 +173,11 @@ def search_food():
 
                 if food_has_image and food_url_slug:
                     potential_image_urls_and_types = []
-                    
+
                     # Priorita: 1. /recepty/, 2. /potraviny/
                     potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/recepty/' + food_url_slug.lstrip('/')), 'recept'))
                     potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/potraviny/' + food_url_slug.lstrip('/')), 'potravina'))
-                    
+
                     # Remove duplicates while preserving order
                     unique_urls_and_types = []
                     seen_urls = set()
@@ -111,11 +205,6 @@ def search_food():
                             pass
                         except Exception as e:
                             pass
-                    
-                    if image_url is None:
-                        pass # Suppress this log as it's common for items without images
-                else:
-                    pass # Suppress this log
 
                 yield json.dumps({
                     "name": food_name,
@@ -162,7 +251,6 @@ def get_details():
         Prioritizuje jednotky hmotnosti/energie před procenty.
         """
         if not isinstance(text_content, str):
-            print(f"  extract_value_and_unit_from_text received non-string: {text_content}")
             return {"value": "N/A", "unit": ""}
 
         # Regex to find a number which can include spaces as thousand separators
@@ -173,21 +261,19 @@ def get_details():
         # \s* : optional whitespace before unit
         # (g|mg|kJ|kcal) : the unit
         match_non_percentage = re.search(r'(\d+(?:[\s\u00A0]\d{3})*(?:[.,]\d+)?)\s*(g|mg|kJ|kcal)', text_content, re.IGNORECASE)
-        
+
         if match_non_percentage:
             value_part_raw = match_non_percentage.group(1)
             unit_part = match_non_percentage.group(2)
 
             # Clean the raw value part: remove all spaces (thousand separators) and replace comma with dot for float conversion
             value_part_cleaned = value_part_raw.replace(' ', '').replace('\u00A0', '').replace(',', '.')
-            
+
             # Validate if it's actually a number after cleaning
             try:
                 float(value_part_cleaned) # Try converting to float to ensure it's a valid number
-                print(f"  extract_value_and_unit_from_text matched non-percentage value: '{value_part_cleaned}', unit: '{unit_part}' (from raw: '{value_part_raw}')")
                 return {"value": value_part_cleaned, "unit": unit_part}
             except ValueError:
-                print(f"  extract_value_and_unit_from_text: Cleaned value '{value_part_cleaned}' is not a valid number.")
                 pass # Not a valid number, fall through to percentage or N/A
 
         # If not a g/mg/kJ/kcal unit, check for percentage (as before)
@@ -195,10 +281,8 @@ def get_details():
         if match_percentage:
             value_part = match_percentage.group(1)
             unit_part = match_percentage.group(2)
-            print(f"  extract_value_and_unit_from_text matched percentage value: '{value_part}', unit: '{unit_part}'")
             return {"value": "N/A", "unit": ""} # Changed to N/A for % values as per user's previous request to only show g/mg/kJ/kcal
 
-        print(f"  extract_value_and_unit_from_text: No number/unit pattern found in '{text_content}'.")
         return {"value": "N/A", "unit": ""}
 
 
@@ -249,7 +333,7 @@ def get_details():
                     energy_sum_div = soup_obj.find('div', class_=lambda x: x and ('text-sum' in x or 'text-sum-xs' in x))
                     if energy_sum_div:
                         scraped_data["total_kcal"] = energy_sum_div.get_text(strip=True)
-                
+
                 kj_div = None
                 all_subtitle_divs = soup_obj.find_all('div', class_='text-subtitle')
                 for div in all_subtitle_divs:
@@ -267,31 +351,26 @@ def get_details():
                 else:
                     scraped_data["total_kj"] = "N/A"
 
-            print(f"  Scraped total_kcal: {scraped_data['total_kcal']}")
-            print(f"  Scraped total_kj: {scraped_data['total_kj']}")
         except Exception as e:
-            print(f"Error scraping total_kcal/kj: {e}")
+            pass
 
 
         # --- Hledání všech živin (hlavních i podkategorií) ---
         # Find the main content block where nutrients are listed
         main_nutrient_block = soup_obj.find('div', class_='block-background', attrs={'flex': '50'})
         if not main_nutrient_block:
-            print("Main nutrient block not found. Cannot parse detailed nutrients.")
             return scraped_data # Return what we have (energy values)
 
         # Find all direct children of this block that are potential nutrient rows
         # These are divs with classes 'text-subtitle', 'text-nutrient', or 'text-desc'
         # We need to be careful with text-desc as it can be RDI or a sub-nutrient value
         nutrient_rows = main_nutrient_block.find_all('div', recursive=False, class_=lambda x: x and any(cls in x for cls in ['text-subtitle', 'text-nutrient', 'text-desc']))
-        
+
         temp_nutrients = {} # Store {nutrient_name: {value_text, rdi_text}}
         current_main_nutrient = None # To link RDI to the correct main nutrient
-        
+
         for i, row in enumerate(nutrient_rows):
             row_text_raw = row.get_text(strip=True)
-            print(f"  Processing row HTML (index {i}): {row}")
-            print(f"  Processing row text: '{row_text_raw}'")
 
             # Check if it's a main nutrient label (text-subtitle with an icon or specific keywords)
             if 'text-subtitle' in row.get('class', []):
@@ -299,31 +378,29 @@ def get_details():
                 icon_tag = row.find('md-icon', class_='material-icons')
                 if icon_tag:
                     icon_tag.extract() # Remove the icon tag from the soup object
-                
+
                 nutrient_name = row.find('div', class_='flex-auto').get_text(strip=True) if row.find('div', class_='flex-auto') else row_text_raw.strip()
-                
+
                 # Check for specific keywords to confirm it's a main nutrient label
                 if any(k in nutrient_name for k in ['Bílkoviny', 'Sacharidy', 'Tuky', 'Vláknina', 'Sůl', 'Vápník', 'Sodík', 'Voda', 'PHE']):
                     current_main_nutrient = nutrient_name
-                    
+
                     # The value is typically in the last div child of this row
                     value_div_candidate = row.find_all('div')[-1]
                     value_text = "N/A"
                     if value_div_candidate:
                         # Get all text content from the value_div_candidate
                         value_text = value_div_candidate.get_text(strip=True)
-                    
+
                     temp_nutrients[current_main_nutrient] = {"value": value_text, "rdi": "N/A"}
-                    print(f"    Identified main nutrient: '{current_main_nutrient}', Value: '{value_text}'")
                 else:
-                    print(f"    Skipping text-subtitle row: '{row_text_raw}' (not a main nutrient)")
                     pass
 
             # Check if it's a sub-nutrient (text-nutrient)
             elif 'text-nutrient' in row.get('class', []):
                 # Find all direct div children of the current row
                 direct_div_children = row.find_all('div', recursive=False)
-                
+
                 sub_nutrient_name = "N/A"
                 value_text = "N/A"
 
@@ -332,12 +409,10 @@ def get_details():
                     sub_nutrient_name = direct_div_children[0].get_text(strip=True)
                     # The last div child should contain the value
                     value_text = direct_div_children[-1].get_text(strip=True)
-                
+
                 if sub_nutrient_name and sub_nutrient_name != "N/A": # Ensure we actually got a name
                     temp_nutrients[sub_nutrient_name] = {"value": value_text, "rdi": "N/A"}
-                    print(f"    Identified sub-nutrient: '{sub_nutrient_name}', Value: '{value_text}'")
                 else:
-                    print(f"    Skipping text-nutrient row: '{row_text_raw}' (could not extract sub-nutrient name)")
                     pass
 
             # Check if it's an RDI (text-desc)
@@ -349,13 +424,9 @@ def get_details():
                         rdi_value_text = row_text_raw.replace('Doporučený denní příjem:', '').strip()
                         if rdi_value_text:
                             temp_nutrients[current_main_nutrient]["rdi"] = rdi_value_text
-                            print(f"    Identified RDI for '{current_main_nutrient}': '{rdi_value_text}'")
                     else:
-                        print(f"    Skipping RDI row: '{row_text_raw}' (no current main nutrient to assign RDI to)")
                         pass
                 else:
-                    # This might be another type of text-desc, just log it for now if not an RDI
-                    print(f"    Skipping text-desc row (not RDI): '{row_text_raw}'")
                     pass
 
 
@@ -363,9 +434,7 @@ def get_details():
         for nutrient_name, data in temp_nutrients.items():
             parsed_value = extract_value_and_unit_from_text(data['value'])
             display_value = f"{parsed_value['value'].replace('.', ',')} {parsed_value['unit']}".strip() if parsed_value['value'] != "N/A" else "N/A"
-            
-            print(f"  Mapping '{nutrient_name}' with display_value: '{display_value}'") # Keep this
-            
+
             parsed_rdi = extract_value_and_unit_from_text(data['rdi'])
             rdi_display_value = f"{parsed_rdi['value'].replace('.', ',')} {parsed_rdi['unit']}".strip() if parsed_rdi['value'] != "N/A" else "N/A"
 
@@ -377,7 +446,7 @@ def get_details():
             elif "Sacharidy" in nutrient_name:
                 scraped_data["carbs"] = display_value
                 scraped_data["carbs_rdi"] = rdi_display_value
-            elif "Cukry" in nutrient_name: 
+            elif "Cukry" in nutrient_name:
                 scraped_data["sugar"] = display_value
             elif "Tuky" in nutrient_name:
                 scraped_data["fat"] = display_value
@@ -405,12 +474,11 @@ def get_details():
                 scraped_data["water"] = display_value
             elif "PHE" in nutrient_name:
                 scraped_data["phe"] = display_value
-            
+
         return scraped_data
 
     def scrape_with_requests_only(url, is_recipe_flag):
         """Načte stránku pomocí requests a parsuje nutriční hodnoty."""
-        print(f"Attempting to scrape URL with requests: {url} (is_recipe_flag: {is_recipe_flag})")
         try:
             response = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
             response.raise_for_status()
@@ -419,10 +487,8 @@ def get_details():
             scraped_data["source_url"] = url
             return scraped_data
         except requests.exceptions.RequestException as e:
-            print(f"Requests error while loading page {url}: {e}")
             return None
         except Exception as e:
-            print(f"An unexpected error occurred with requests for {url}: {e}")
             return None
 
     scraped_data = None
@@ -442,19 +508,17 @@ def get_details():
         is_recipe_flag = False
 
     # Attempt with requests/BeautifulSoup4
-    print(f"Attempting scrape with requests for {target_url}")
     scraped_data = scrape_with_requests_only(target_url, is_recipe_flag)
 
     # If requests failed to get total_kcal and food_type was not explicit, try the other type with requests
     if (scraped_data is None or scraped_data.get("total_kcal") == "N/A") and food_type_from_frontend not in ['potravina', 'recept']:
-        print(f"Requests failed or food_type unknown, trying alternative type with requests for {slug}")
         if is_recipe_flag: # If current attempt was recipe, try foodstuff
             target_url_alt = urljoin(BASE_WEB_URL, '/potraviny/' + slug.lstrip('/'))
             scraped_data = scrape_with_requests_only(target_url_alt, False)
         else: # If current attempt was foodstuff, try recipe
             target_url_alt = urljoin(BASE_WEB_URL, '/recepty/' + slug.lstrip('/'))
             scraped_data = scrape_with_requests_only(target_url_alt, True)
-        
+
         # Update target_url and is_recipe_flag if the alternative scrape was successful
         if scraped_data and scraped_data.get("total_kcal") != "N/A":
             target_url = target_url_alt
@@ -462,11 +526,47 @@ def get_details():
 
     if scraped_data and scraped_data.get("total_kcal") != "N/A":
         details.update(scraped_data)
-        print(f"DEBUG: Details to be sent to frontend: {json.dumps(details, indent=2)}")
         return jsonify(details)
     else:
-        print(f"Failed to get details after all requests attempts for slug: {slug}")
         return jsonify({"error": f"Nepodařilo se získat detaily pro {slug} po všech pokusech pouze s requests."}), 500
 
+@app.route('/search_by_barcode', methods=['POST'])
+def search_by_barcode():
+    """
+    Vyhledá potravinu podle čárového kódu (EAN)
+    """
+    barcode = request.json.get('barcode')
+    if not barcode:
+        return jsonify({"error": "Chybí čárový kód pro vyhledávání."}), 400
+    
+    # Můžete implementovat vlastní logiku pro mapování EAN kódů na názvy potravin
+    # Toto je příklad - můžete použít externí API nebo vlastní databázi
+    
+    # Příklad mapování běžných EAN kódů na názvy potravin
+    ean_to_food_mapping = {
+        '8594001000108': 'Tatranka čokoládová',
+        '8594001000207': 'Tatranka oříšková',
+        '8594001000306': 'Tatranka kokosová',
+        '8594001000405': 'Tatranka lískooříšková',
+        # Přidejte další mapping podle potřeby
+    }
+    
+    food_name = ean_to_food_mapping.get(barcode)
+    
+    if food_name:
+        # Pokud najdeme mapování, použijeme ho pro vyhledávání
+        return search_food_by_name(food_name)
+    else:
+        # Pokud nemáme mapování, zkusíme vyhledat přímo podle EAN
+        return search_food_by_name(barcode)
+
+def search_food_by_name(food_name):
+    """
+    Pomocná funkce pro vyhledávání potraviny podle názvu
+    """
+    # Simulujeme POST požadavek na /search s názvem potraviny
+    with app.test_request_context('/search', method='POST', data={'query': food_name}):
+        return search_food()
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
