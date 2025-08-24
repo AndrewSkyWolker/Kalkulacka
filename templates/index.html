@@ -184,6 +184,11 @@
         <div class="modal-content" style="max-width: 90%; height: 70%;">
             <span class="close-button" id="closeBarcodeModal">&times;</span>
             <h3>Skenovat čárový kód</h3>
+            <button id="stopScanButton" style="margin: 10px auto; display: block; padding: 10px 20px; 
+                    background-color: #f44336; color: white; border: none; border-radius: 8px; 
+                   cursor: pointer; display: none;">
+                Zastavit skenování
+            </button>
             <div id="barcodeScannerContainer" style="width: 100%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; border-radius: 8px;">
                 <div id="barcodeUnsupportedMessage" style="text-align: center; padding: 20px;">
                     <p style="font-size: 18px; margin-bottom: 15px;">🔒 Skenování čárových kódů není v tomto prohlížeči dostupné</p>
@@ -1173,29 +1178,6 @@ function debugCameraStream() {
     }
 }
 
-// Volání v openBarcodeScanner po startCamera
-//async function openBarcodeScanner() {
-//    barcodeModal.style.display = 'flex';
-//    barcodeStatus.textContent = 'Inicializace...';
-//    
-//    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-//        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
-//        barcodeStatus.style.color = 'red';
-//        return;
-//    }
-//
-//    try {
-//        await startCamera();
-//        debugCameraStream(); // Debug info
-//        barcodeStatus.textContent = 'Namiřte na čárový kód';
-//        startBarcodeScanning();
-//    } catch (error) {
-//        console.error('Chyba při inicializaci kamery:', error);
-//        barcodeStatus.textContent = 'Chyba: ' + error.message;
-//        barcodeStatus.style.color = 'red';
-//    }
-//}
-
 // Inicializace skeneru čárových kódů
 function initBarcodeScanner() {
     barcodeModal = document.getElementById('barcodeModal');
@@ -1210,11 +1192,33 @@ function initBarcodeScanner() {
     document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
     document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
     
+    // PŘIDEJTE TOTO - event listener pro nové tlačítko
+    document.getElementById('stopScanButton').addEventListener('click', stopBarcodeScanning);
+
     // Event listener pro tlačítko skeneru
     document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
     
     // Inicializace QuaggaJS
-    // initQuagga();
+    initQuagga();
+}
+
+function stopBarcodeScanning() {
+    // Zastavíme skenování
+    if (quaggaInitialized) {
+        Quagga.stop();
+    }
+    
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    // Skryjeme tlačítko "Zastavit"
+    document.getElementById('stopScanButton').style.display = 'none';
+    
+    // Změníme status
+    barcodeStatus.textContent = 'Skenování zastaveno';
+    barcodeStatus.style.color = '#666';
 }
 
 // Inicializace QuaggaJS
@@ -1230,48 +1234,40 @@ function initQuagga() {
                     height: 480,
                     facingMode: facingMode
                 },
-                area: { // Definiujte oblast pro skenování
-                    top: "25%",
-                    right: "25%",
-                    left: "25%",
-                    bottom: "25%"
-                }
             },
             decoder: {
-                readers: [
-                    "ean_reader", // Prioritně EAN pro potraviny
-                    "ean_8_reader",
-                    "upc_reader",
-                    "upc_e_reader",
-                    "code_128_reader",
-                    "code_39_reader"
-                ]
+                readers: ["ean_reader", "ean_8_reader", "upc_reader"]
             },
-            locate: true, // Povolte lokalizaci čárových kódů
-            frequency: 10 // Frekvence skenování
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            locate: true,
+            frequency: 10
         }, function(err) {
             if (err) {
                 console.error("Chyba při inicializaci Quagga:", err);
                 barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
                 barcodeStatus.style.color = 'red';
-                
-                // Fallback na canvas detection
                 startCanvasFallback();
                 return;
             }
+            
             quaggaInitialized = true;
             console.log("Quagga inicializována");
             
             Quagga.onDetected(function(result) {
+                console.log('Quagga result:', result);
                 if (result && result.codeResult) {
-                    console.log('Quagga detected:', result.codeResult);
+                    console.log('Detekován kód:', result.codeResult.code, 'typ:', result.codeResult.format);
                     handleBarcodeDetected(result.codeResult.code);
                 }
             });
             
             Quagga.onProcessed(function(result) {
-                if (result) {
-                    // Můžete přidat vizuální feedback
+                // Debug info
+                if (result && result.boxes) {
+                    console.log('Processed boxes:', result.boxes);
                 }
             });
         });
@@ -1319,6 +1315,8 @@ async function openBarcodeScanner() {
     barcodeModal.style.display = 'flex';
     barcodeStatus.textContent = 'Inicializace...';
     
+    // ZOBRAZÍME TLAČÍTKO "ZASTAVIT"
+    document.getElementById('stopScanButton').style.display = 'block';
     // Zkontrolujeme, zda je API dostupné
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
@@ -1463,51 +1461,102 @@ function detectBarcodesWithCanvas() {
     });
 }
 
-// Jednoduchá detekce čárových kódů (základní implementace)
+// Jednoduchá detekce čárových kódů (vylepšená)
 function detectSimpleBarcodes(imageData) {
     const data = imageData.data;
     const width = imageData.width;
     const height = imageData.height;
     const barcodes = [];
     
-    // Projedeme středem obrazu horizontálně
-    const middleY = Math.floor(height / 2);
-    let inBar = false;
-    let barStart = 0;
-    let bars = [];
+    // Projedeme pouze středovou oblast (30% výšky)
+    const startY = Math.floor(height * 0.35);
+    const endY = Math.floor(height * 0.65);
     
-    for (let x = 0; x < width; x++) {
-        const index = (middleY * width + x) * 4;
-        const r = data[index];
-        const g = data[index + 1];
-        const b = data[index + 2];
+    for (let y = startY; y <= endY; y += Math.floor(height * 0.05)) {
+        let inBar = false;
+        let barStart = 0;
+        let bars = [];
+        let barCount = 0;
         
-        // Jednoduchý threshold pro černou barvu
-        const brightness = (r + g + b) / 3;
-        const isDark = brightness < 128;
-        
-        if (isDark && !inBar) {
-            // Začátek pruhu
-            inBar = true;
-            barStart = x;
-        } else if (!isDark && inBar) {
-            // Konec pruhu
-            inBar = false;
-            bars.push({ start: barStart, end: x, width: x - barStart });
+        for (let x = 0; x < width; x++) {
+            const index = (y * width + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+            
+            const brightness = (r + g + b) / 3;
+            const isDark = brightness < 80; // Přísnější threshold
+            
+            if (isDark && !inBar) {
+                inBar = true;
+                barStart = x;
+                barCount++;
+            } else if (!isDark && inBar) {
+                inBar = false;
+                const barWidth = x - barStart;
+                
+                // Filtrujeme příliš široké/úzké pruhy
+                if (barWidth > 2 && barWidth < 50) {
+                    bars.push({ start: barStart, end: x, width: barWidth });
+                }
+            }
         }
-    }
-    
-    // Pokud jsme našli několik pruhů, pravděpodobně jde o čárový kód
-    if (bars.length > 5) {
-        barcodes.push("PRAVDĚPODOBNÝ_ČÁROVÝ_KÓD");
+        
+        // EAN kód má obvykle 30-60 pruhů
+        if (bars.length > 25 && bars.length < 65) {
+            console.log('Nalezen potenciální čárový kód s', bars.length, 'pruhy');
+            
+            // Zkusíme extrahovat numerickou hodnotu
+            const numericPattern = extractNumericPattern(bars);
+            if (numericPattern && numericPattern.length >= 8) {
+                barcodes.push(numericPattern);
+                break; // Našli jsme platný kód, přestaneme hledat
+            }
+        }
     }
     
     return barcodes;
 }
 
+function extractNumericPattern(bars) {
+    // Jednoduchá heuristika - v reálné aplikaci by bylo potřeba proper dekódování
+    const widths = bars.map(bar => bar.width);
+    const avgWidth = widths.reduce((a, b) => a + b, 0) / widths.length;
+    
+    // Binární reprezentace podle šířky pruhů
+    let binary = '';
+    for (const bar of bars) {
+        binary += bar.width > avgWidth ? '1' : '0';
+    }
+    
+    // Zkusíme najít něco, co vypadá jako EAN (13 nebo 8 číslic)
+    if (binary.length >= 95) { // EAN-13 má cca 95 modulů
+        return 'PRAVDĚPODOBNY_EAN_13';
+    } else if (binary.length >= 67) { // EAN-8 má cca 67 modulů
+        return 'PRAVDĚPODOBNY_EAN_8';
+    }
+    
+    return null;
+}
+
 // Zpracování nalezeného čárového kódu
 function handleBarcodeDetected(barcode) {
     console.log('Nalezen čárový kód:', barcode);
+    
+    // Filtrujeme testovací/neplatné kódy
+    if (barcode === 'PRAVDĚPODOBNÝ_ČÁROVÝ_KÓD' || 
+        barcode === 'PRAVDĚPODOBNY_EAN_13' || 
+        barcode === 'PRAVDĚPODOBNY_EAN_8') {
+        console.log('Ignoruji testovací/neplatný kód');
+        return; // Nezpracováváme testovací kódy
+    }
+    
+    // Kontrola, zda jde o numerický EAN (8 nebo 13 číslic)
+    const isNumericEAN = /^\d{8}$|^\d{13}$/.test(barcode);
+    if (!isNumericEAN) {
+        console.log('Ignoruji neplatný formát kódu:', barcode);
+        return;
+    }
     
     // Vizuální feedback
     barcodeOverlay.classList.add('barcode-found');
@@ -1602,14 +1651,7 @@ async function toggleFlash() {
 // Zavření skeneru čárových kódů
 function closeBarcodeScanner() {
     // Zastavíme skenování
-    if (quaggaInitialized) {
-        Quagga.stop();
-    }
-    
-    if (scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
-    }
+    stopBarcodeScanning(); // Voláme novou funkci
     
     // Zastavíme stream videa
     if (stream) {
@@ -1624,6 +1666,9 @@ function closeBarcodeScanner() {
     
     // Skryjeme modální okno
     barcodeModal.style.display = 'none';
+    
+    // SKRYJEME TLAČÍTKO "ZASTAVIT"
+    document.getElementById('stopScanButton').style.display = 'none';
     
     // Obnovíme výchozí zobrazení
     document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
