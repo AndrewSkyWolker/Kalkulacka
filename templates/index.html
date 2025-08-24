@@ -1174,27 +1174,27 @@ function debugCameraStream() {
 }
 
 // Volání v openBarcodeScanner po startCamera
-async function openBarcodeScanner() {
-    barcodeModal.style.display = 'flex';
-    barcodeStatus.textContent = 'Inicializace...';
-    
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
-        barcodeStatus.style.color = 'red';
-        return;
-    }
-
-    try {
-        await startCamera();
-        debugCameraStream(); // Debug info
-        barcodeStatus.textContent = 'Namiřte na čárový kód';
-        startBarcodeScanning();
-    } catch (error) {
-        console.error('Chyba při inicializaci kamery:', error);
-        barcodeStatus.textContent = 'Chyba: ' + error.message;
-        barcodeStatus.style.color = 'red';
-    }
-}
+//async function openBarcodeScanner() {
+//    barcodeModal.style.display = 'flex';
+//    barcodeStatus.textContent = 'Inicializace...';
+//    
+//    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+//        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+//        barcodeStatus.style.color = 'red';
+//        return;
+//    }
+//
+//    try {
+//        await startCamera();
+//        debugCameraStream(); // Debug info
+//        barcodeStatus.textContent = 'Namiřte na čárový kód';
+//        startBarcodeScanning();
+//    } catch (error) {
+//        console.error('Chyba při inicializaci kamery:', error);
+//        barcodeStatus.textContent = 'Chyba: ' + error.message;
+//        barcodeStatus.style.color = 'red';
+//    }
+//}
 
 // Inicializace skeneru čárových kódů
 function initBarcodeScanner() {
