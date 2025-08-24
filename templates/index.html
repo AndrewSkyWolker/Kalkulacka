@@ -1286,12 +1286,20 @@ function initQuagga() {
             frequency: 5,               // VYŠŠÍ frekvence
             numOfWorkers: 4,            // VÍCE workerů
             debug: true                 // POVOLIT debug
-        }, function(err) {
+        }, 
+        function(err) {
             if (err) {
                 console.error("Chyba při inicializaci Quagga:", err);
                 barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
                 barcodeStatus.style.color = 'red';
-                startCanvasFallback();
+                // POKUS O OBNOVU PO CHYBĚ
+                setTimeout(() => {
+                    if (barcodeModal.style.display === 'flex') {
+                        console.log('Zkouším znovu inicializovat Quaggu...');
+                        initQuagga();
+                    }
+                }, 1000);
+                    
                 return;
             }
             
@@ -1321,8 +1329,12 @@ function initQuagga() {
                     handleBarcodeDetected(result.codeResult.code);
                 }
             });
-        });
+        
+        } catch (error) {
+            console.error('Výjimka při inicializaci Quaggy:', error);
+        }
     }
+    updateScanningStatus('Inicializuji Quaggu...', 'info');
 }
 
 // Fallback funkce pro canvas detection
@@ -1358,32 +1370,25 @@ function submitManualBarcode() {
     }
 }
 
+// Přidejte funkci pro status
+function updateScanningStatus(message, type = 'info') {
+    const statusElement = document.getElementById('scanningStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `scanning-status ${type}`;
+    }
+}
+
 // Otevření skeneru čárových kódů
 async function openBarcodeScanner() {
+    console.log('Otevírám skener...');
     barcodeModal.style.display = 'flex';
     barcodeStatus.textContent = 'Inicializace...';
-    barcodeStatus.innerHTML = `Namiřte na čárový kód<br><small>Ujistěte se, že je kód v dobrém osvětlení a přímo před kamerou</small>`;
-    
-    // Přidejte CSS pro lepší zobrazení
-    const style = document.createElement('style');
-    style.textContent = `
-        .scanning-hints {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            text-align: center;
-        }
-        .confidence-low {
-            color: orange;
-        }
-        .confidence-high {
-            color: green;
-        }
-    `;
-document.head.appendChild(style);
+    barcodeStatus.innerHTML = `<div>Inicializace kamery...</div><div class="scanning-status" id="scanningStatus"></div>`;
     
     // ZOBRAZÍME TLAČÍTKO "ZASTAVIT"
     document.getElementById('stopScanButton').style.display = 'block';
+    
     // Zkontrolujeme, zda je API dostupné
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
@@ -1393,12 +1398,59 @@ document.head.appendChild(style);
 
     try {
         await startCamera();
+        debugCameraStream();
         barcodeStatus.textContent = 'Namiřte na čárový kód';
+        
+        // POČKÁME, NEŽ SE VIDEO NAČTE
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         startBarcodeScanning();
     } catch (error) {
         console.error('Chyba při inicializaci kamery:', error);
         barcodeStatus.textContent = 'Chyba: ' + error.message;
         barcodeStatus.style.color = 'red';
+        
+        // POKUS O OBNOVU QUAGGY
+        if (quaggaInitialized) {
+            try {
+                Quagga.stop();
+                // Počkáme a zkusíme znovu
+                setTimeout(() => {
+                    if (barcodeModal.style.display === 'flex') {
+                        startBarcodeScanning();
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error('Nelze obnovit Quaggu:', e);
+            }
+        }
+    }
+}
+
+function restartQuagga() {
+    console.log('Restartuji Quaggu...');
+    
+    if (typeof Quagga !== 'undefined') {
+        try {
+            // Zastavíme současnou instanci
+            if (quaggaInitialized) {
+                Quagga.stop();
+                Quagga.offDetected();
+                Quagga.offProcessed();
+            }
+            
+            // Resetujeme stav
+            quaggaInitialized = false;
+            
+            // Počkáme chvíli
+            setTimeout(() => {
+                initQuagga();
+                console.log('Quagga restartována');
+            }, 500);
+            
+        } catch (error) {
+            console.error('Chyba při restartu Quaggy:', error);
+        }
     }
 }
 
@@ -1472,28 +1524,29 @@ async function startCamera() {
 
 // Spuštění skenování čárových kódů
 function startBarcodeScanning() {
+    console.log('Spouštím skenování...');
+    
     // Zastavíme existující interval
     if (scanInterval) {
         clearInterval(scanInterval);
+        scanInterval = null;
     }
     
-    if (quaggaInitialized) {
-        Quagga.start();
-        barcodeStatus.textContent = 'Skenování spuštěno - namiřte na čárový kód';
+    // ZKONTROLUJEME, zda je Quagga připravena a video funguje
+    if (quaggaInitialized && barcodeVideo && barcodeVideo.srcObject) {
+        try {
+            Quagga.start();
+            barcodeStatus.textContent = 'Skenování spuštěno - namiřte na čárový kód';
+            console.log('Quagga úspěšně restartována');
+        } catch (error) {
+            console.error('Chyba při startu Quaggy:', error);
+            // Fallback na canvas
+            startCanvasFallback();
+        }
     } else {
+        console.log('Quagga není inicializována nebo video nefunguje, používám fallback');
         // Fallback: použijeme intervalové kontrolování pomocí canvasu
-        scanInterval = setInterval(async () => {
-            if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
-                try {
-                    const barcodes = await detectBarcodesWithCanvas();
-                    if (barcodes.length > 0) {
-                        handleBarcodeDetected(barcodes[0]);
-                    }
-                } catch (error) {
-                    console.error('Chyba při detekci čárového kódu:', error);
-                }
-            }
-        }, 1000); // Kontrolujeme každou sekundu
+        startCanvasFallback();
     }
 }
 
@@ -1791,13 +1844,22 @@ async function toggleFlash() {
 
 // Zavření skeneru čárových kódů
 function closeBarcodeScanner() {
+    console.log('Zavírám skener...');
+    
     // Zastavíme skenování
-    stopBarcodeScanning(); // Voláme novou funkci
+    stopBarcodeScanning();
     
     // Zastavíme stream videa
     if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
+        try {
+            stream.getTracks().forEach(track => {
+                track.stop();
+                console.log('Zastaven track:', track.kind);
+            });
+            stream = null;
+        } catch (error) {
+            console.error('Chyba při zastavování streamu:', error);
+        }
     }
     
     // Zastavíme video
@@ -1805,10 +1867,13 @@ function closeBarcodeScanner() {
         barcodeVideo.srcObject = null;
     }
     
+    // RESTARTUJEME QUAGGU PRO PŘÍŠTÍ POUŽITÍ
+    restartQuagga();
+    
     // Skryjeme modální okno
     barcodeModal.style.display = 'none';
     
-    // SKRYJEME TLAČÍTKO "ZASTAVIT"
+    // Skryjeme tlačítko "Zastavit"
     document.getElementById('stopScanButton').style.display = 'none';
     
     // Obnovíme výchozí zobrazení
@@ -1817,6 +1882,8 @@ function closeBarcodeScanner() {
     document.getElementById('toggleCameraButton').style.display = 'none';
     document.getElementById('toggleFlashButton').style.display = 'none';
     barcodeOverlay.style.display = 'none';
+    
+    console.log('Skener úspěšně uzavřen');
 }
 
         initializeFirebase();
