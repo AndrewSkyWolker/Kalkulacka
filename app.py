@@ -514,16 +514,40 @@ def search_by_barcode():
     if not barcode:
         return jsonify({"error": "Chybí čárový kód pro vyhledávání."}), 400
     
-    # Můžete implementovat vlastní logiku pro mapování EAN kódů na názvy potravin
-    # Toto je příklad - můžete použít externí API nebo vlastní databázi
-    
-    # Příklad mapování běžných EAN kódů na názvy potravin
+    # Rozšířené mapování EAN kódů na názvy potravin
     ean_to_food_mapping = {
+        # Mléčné výrobky
         '8594001000108': 'Tatranka čokoládová',
         '8594001000207': 'Tatranka oříšková',
         '8594001000306': 'Tatranka kokosová',
         '8594001000405': 'Tatranka lískooříšková',
-        # Přidejte další mapping podle potřeby
+        '8594001320106': 'Pribináček vanilkový',
+        '8594001320205': 'Pribináček čokoládový',
+        '8594001320304': 'Pribináček jahodový',
+        
+        # Nápoje
+        '8594002000104': 'Coca-Cola',
+        '8594002000203': 'Coca-Cola Zero',
+        '8594002000302': 'Fanta',
+        '8594002000401': 'Sprite',
+        
+        # Čokolády
+        '8594003000105': 'Studentská pečeť',
+        '8594003000204': 'Orion',
+        '8594003000303': 'Figaro',
+        '8594003000402': 'Horalky',
+        
+        # Mléko a jogurty
+        '8594004000103': 'Jogurt Hollandia jahoda',
+        '8594004000202': 'Jogurt Hollandia vanilka',
+        '8594004000301': 'Mléko polotučné',
+        
+        # Pečivo a trvanlivé potraviny
+        '8594005000102': 'Chléb konzumní kmínový',
+        '8594005000201': 'Rohlík',
+        '8594005000300': 'Dalamánek',
+        
+        # Přidejte další běžné EAN kódy podle potřeby
     }
     
     food_name = ean_to_food_mapping.get(barcode)
@@ -533,7 +557,8 @@ def search_by_barcode():
         return search_food_by_name(food_name)
     else:
         # Pokud nemáme mapování, zkusíme vyhledat přímo podle EAN
-        return search_food_by_name(barcode)
+        # nebo vrátíme chybovou zprávu
+        return jsonify({"error": f"Čárový kód {barcode} nebyl nalezen v databázi. Zkuste vyhledat ručně."}), 404
 
 def search_food_by_name(food_name):
     """
