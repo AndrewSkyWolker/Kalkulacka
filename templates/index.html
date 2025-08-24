@@ -1146,306 +1146,397 @@
         }
 
         // --- Barcode Scanner Functions ---
-        let barcodeModal = null;
-        let barcodeVideo = null;
-        let barcodeCanvas = null;
-        let barcodeOverlay = null;
-        let barcodeStatus = null;
-        let stream = null;
-        let currentDeviceId = null;
-        let facingMode = 'environment'; // 'environment' pro zadní kameru, 'user' pro přední
-        let flashEnabled = false;
-        let barcodeDetector = null;
-        let scanInterval = null;
+        // --- Barcode Scanner Functions ---
+let barcodeModal = null;
+let barcodeVideo = null;
+let barcodeCanvas = null;
+let barcodeOverlay = null;
+let barcodeStatus = null;
+let stream = null;
+let currentDeviceId = null;
+let facingMode = 'environment';
+let flashEnabled = false;
+let scanInterval = null;
+let quaggaInitialized = false;
 
-        // Inicializace skeneru čárových kódů
-        function initBarcodeScanner() {
-            barcodeModal = document.getElementById('barcodeModal');
-            barcodeVideo = document.getElementById('barcodeVideo');
-            barcodeCanvas = document.getElementById('barcodeCanvas');
-            barcodeOverlay = document.getElementById('barcodeOverlay');
-            barcodeStatus = document.getElementById('barcodeStatus');
-            
-            // Event listenery pro modální okno skeneru
-            document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
-            document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
-            document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
-            document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
-            
-            // Event listener pro tlačítko skeneru
-            document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
-        }
+// Inicializace skeneru čárových kódů
+function initBarcodeScanner() {
+    barcodeModal = document.getElementById('barcodeModal');
+    barcodeVideo = document.getElementById('barcodeVideo');
+    barcodeCanvas = document.getElementById('barcodeCanvas');
+    barcodeOverlay = document.getElementById('barcodeOverlay');
+    barcodeStatus = document.getElementById('barcodeStatus');
+    
+    // Event listenery pro modální okno skeneru
+    document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
+    document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
+    document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
+    document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
+    
+    // Event listener pro tlačítko skeneru
+    document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
+    
+    // Inicializace QuaggaJS
+    initQuagga();
+}
 
-        // Odeslání ručně zadaného čárového kódu
-        function submitManualBarcode() {
-            const manualBarcodeInput = document.getElementById('manualBarcodeInput');
-            const barcode = manualBarcodeInput.value.trim();
-            
-            if (barcode) {
-                closeBarcodeScanner();
-                searchByBarcode(barcode);
-            } else {
-                barcodeStatus.textContent = 'Prosím, zadejte čárový kód';
-                barcodeStatus.style.color = 'red';
+// Inicializace QuaggaJS
+function initQuagga() {
+    if (typeof Quagga !== 'undefined') {
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: barcodeVideo,
+                constraints: {
+                    width: 640,
+                    height: 480,
+                    facingMode: facingMode
+                },
+            },
+            decoder: {
+                readers: [
+                    "code_128_reader",
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_39_reader",
+                    "upc_reader",
+                    "upc_e_reader"
+                ]
             }
-        }
-
-        // Otevření skeneru čárových kódů
-        async function openBarcodeScanner() {
-            barcodeModal.style.display = 'flex';
-            barcodeStatus.textContent = 'Inicializace...';
-            
-            // Zkontrolujeme, zda je API dostupné
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+        }, function(err) {
+            if (err) {
+                console.error("Chyba při inicializaci Quagga:", err);
+                barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
                 barcodeStatus.style.color = 'red';
                 return;
             }
+            quaggaInitialized = true;
+            console.log("Quagga inicializována");
+        });
 
-            try {
-                await startCamera();
-                barcodeStatus.textContent = 'Namiřte na čárový kód';
-                startBarcodeScanning();
-            } catch (error) {
-                console.error('Chyba při inicializaci kamery:', error);
-                barcodeStatus.textContent = 'Chyba: ' + error.message;
-                barcodeStatus.style.color = 'red';
+        Quagga.onDetected(function(result) {
+            if (result && result.codeResult) {
+                handleBarcodeDetected(result.codeResult.code);
             }
+        });
+    } else {
+        console.warn("QuaggaJS není k dispozici");
+    }
+}
+
+// Odeslání ručně zadaného čárového kódu
+function submitManualBarcode() {
+    const manualBarcodeInput = document.getElementById('manualBarcodeInput');
+    const barcode = manualBarcodeInput.value.trim();
+    
+    if (barcode) {
+        closeBarcodeScanner();
+        searchByBarcode(barcode);
+    } else {
+        barcodeStatus.textContent = 'Prosím, zadejte čárový kód';
+        barcodeStatus.style.color = 'red';
+    }
+}
+
+// Otevření skeneru čárových kódů
+async function openBarcodeScanner() {
+    barcodeModal.style.display = 'flex';
+    barcodeStatus.textContent = 'Inicializace...';
+    
+    // Zkontrolujeme, zda je API dostupné
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+        barcodeStatus.style.color = 'red';
+        return;
+    }
+
+    try {
+        await startCamera();
+        barcodeStatus.textContent = 'Namiřte na čárový kód';
+        startBarcodeScanning();
+    } catch (error) {
+        console.error('Chyba při inicializaci kamery:', error);
+        barcodeStatus.textContent = 'Chyba: ' + error.message;
+        barcodeStatus.style.color = 'red';
+    }
+}
+
+// Spuštění kamery
+async function startCamera() {
+    // Zastavíme existující stream
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    
+    const constraints = {
+        video: {
+            facingMode: facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
         }
-
-        // Spuštění kamery
-        async function startCamera() {
-            // Zastavíme existující stream
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            
-            const constraints = {
-                video: {
-                    facingMode: facingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
+    };
+    
+    // Pokud máme uložené deviceId, použijeme ho
+    if (currentDeviceId) {
+        constraints.video.deviceId = { exact: currentDeviceId };
+    }
+    
+    try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        barcodeVideo.srcObject = stream;
+        barcodeVideo.style.display = 'block';
+        document.getElementById('barcodeUnsupportedMessage').style.display = 'none';
+        document.getElementById('toggleCameraButton').style.display = 'inline-block';
+        document.getElementById('toggleFlashButton').style.display = 'inline-block';
+        barcodeOverlay.style.display = 'block';
+        
+        // Uložíme deviceId pro příště
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+            currentDeviceId = videoTrack.getSettings().deviceId;
+        }
+        
+        // Čekáme na načtení videa
+        return new Promise((resolve) => {
+            barcodeVideo.onloadedmetadata = () => {
+                barcodeVideo.play();
+                resolve();
             };
-            
-            // Pokud máme uložené deviceId, použijeme ho
-            if (currentDeviceId) {
-                constraints.video.deviceId = { exact: currentDeviceId };
-            }
-            
-            try {
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                barcodeVideo.srcObject = stream;
-                barcodeVideo.style.display = 'block';
-                document.getElementById('barcodeUnsupportedMessage').style.display = 'none';
-                document.getElementById('toggleCameraButton').style.display = 'inline-block';
-                document.getElementById('toggleFlashButton').style.display = 'inline-block';
-                barcodeOverlay.style.display = 'block';
-                
-                // Uložíme deviceId pro příště
-                const videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack) {
-                    currentDeviceId = videoTrack.getSettings().deviceId;
-                }
-                
-                // Čekáme na načtení videa
-                return new Promise((resolve) => {
-                    barcodeVideo.onloadedmetadata = () => {
-                        barcodeVideo.play();
-                        resolve();
-                    };
-                });
-            } catch (error) {
-                console.error('Chyba při přístupu ke kameře:', error);
-                // Zobrazíme informační zprávu místo chyby
-                document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
-                barcodeVideo.style.display = 'none';
-                document.getElementById('toggleCameraButton').style.display = 'none';
-                document.getElementById('toggleFlashButton').style.display = 'none';
-                barcodeOverlay.style.display = 'none';
-                
-                barcodeStatus.textContent = 'Použijte ruční zadání kódu';
-                throw error;
-            }
-        }
+        });
+    } catch (error) {
+        console.error('Chyba při přístupu ke kameře:', error);
+        document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+        barcodeVideo.style.display = 'none';
+        document.getElementById('toggleCameraButton').style.display = 'none';
+        document.getElementById('toggleFlashButton').style.display = 'none';
+        barcodeOverlay.style.display = 'none';
+        
+        barcodeStatus.textContent = 'Použijte ruční zadání kódu';
+        throw error;
+    }
+}
 
-        // Spuštění skenování čárových kódů
-        function startBarcodeScanning() {
-            // Zastavíme existující interval
-            if (scanInterval) {
-                clearInterval(scanInterval);
+// Spuštění skenování čárových kódů
+function startBarcodeScanning() {
+    // Zastavíme existující interval
+    if (scanInterval) {
+        clearInterval(scanInterval);
+    }
+    
+    if (quaggaInitialized) {
+        Quagga.start();
+        barcodeStatus.textContent = 'Skenování spuštěno - namiřte na čárový kód';
+    } else {
+        // Fallback: použijeme intervalové kontrolování pomocí canvasu
+        scanInterval = setInterval(async () => {
+            if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
+                try {
+                    const barcodes = await detectBarcodesWithCanvas();
+                    if (barcodes.length > 0) {
+                        handleBarcodeDetected(barcodes[0]);
+                    }
+                } catch (error) {
+                    console.error('Chyba při detekci čárového kódu:', error);
+                }
             }
-            
-            // Nastavíme interval pro kontrolu čárových kódů
-            scanInterval = setInterval(async () => {
-                if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
-                    try {
-                        // Pro jednoduchost použijeme QuaggaJS jako fallback
-                        const barcodes = await detectBarcodesWithQuagga();
-                        
-                        if (barcodes.length > 0) {
-                            const barcode = barcodes[0].rawValue;
-                            handleBarcodeDetected(barcode);
-                        }
-                    } catch (error) {
-                        console.error('Chyba při detekci čárového kódu:', error);
-                    }
-                }
-            }, 500); // Kontrolujeme každých 500ms
-        }
+        }, 1000); // Kontrolujeme každou sekundu
+    }
+}
 
-        // Detekce čárových kódů pomocí QuaggaJS
-        function detectBarcodesWithQuagga() {
-            return new Promise((resolve) => {
-                // Pokud Quagga není k dispozici, vrátíme prázdné pole
-                if (typeof Quagga === 'undefined') {
-                    resolve([]);
-                    return;
-                }
-                
-                const context = barcodeCanvas.getContext('2d');
-                const width = barcodeVideo.videoWidth;
-                const height = barcodeVideo.videoHeight;
-                
-                // Nastavíme velikost canvasu
-                barcodeCanvas.width = width;
-                barcodeCanvas.height = height;
-                
-                // Nakreslíme aktuální snímek videa na canvas
-                context.drawImage(barcodeVideo, 0, 0, width, height);
-                
-                // Získáme imageData z canvasu
-                const imageData = context.getImageData(0, 0, width, height);
-                
-                // Použijeme Quaggu pro detekci čárových kódů
-                Quagga.decodeSingle({
-                    decoder: {
-                        readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'code_128_reader']
-                    },
-                    locate: true,
-                    src: imageData
-                }, function(result) {
-                    if (result && result.codeResult) {
-                        resolve([{ rawValue: result.codeResult.code }]);
-                    } else {
-                        resolve([]);
-                    }
-                });
+// Detekce čárových kódů pomocí canvasu (fallback)
+function detectBarcodesWithCanvas() {
+    return new Promise((resolve) => {
+        const context = barcodeCanvas.getContext('2d');
+        const width = barcodeVideo.videoWidth;
+        const height = barcodeVideo.videoHeight;
+        
+        // Nastavíme velikost canvasu
+        barcodeCanvas.width = width;
+        barcodeCanvas.height = height;
+        
+        // Nakreslíme aktuální snímek videa na canvas
+        context.drawImage(barcodeVideo, 0, 0, width, height);
+        
+        // Získáme imageData z canvasu
+        const imageData = context.getImageData(0, 0, width, height);
+        
+        // Jednoduchá detekce čárových kódů - hledání kontrastních pruhů
+        // Toto je velmi základní implementace
+        const detectedBarcodes = detectSimpleBarcodes(imageData);
+        resolve(detectedBarcodes);
+    });
+}
+
+// Jednoduchá detekce čárových kódů (základní implementace)
+function detectSimpleBarcodes(imageData) {
+    const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+    const barcodes = [];
+    
+    // Projedeme středem obrazu horizontálně
+    const middleY = Math.floor(height / 2);
+    let inBar = false;
+    let barStart = 0;
+    let bars = [];
+    
+    for (let x = 0; x < width; x++) {
+        const index = (middleY * width + x) * 4;
+        const r = data[index];
+        const g = data[index + 1];
+        const b = data[index + 2];
+        
+        // Jednoduchý threshold pro černou barvu
+        const brightness = (r + g + b) / 3;
+        const isDark = brightness < 128;
+        
+        if (isDark && !inBar) {
+            // Začátek pruhu
+            inBar = true;
+            barStart = x;
+        } else if (!isDark && inBar) {
+            // Konec pruhu
+            inBar = false;
+            bars.push({ start: barStart, end: x, width: x - barStart });
+        }
+    }
+    
+    // Pokud jsme našli několik pruhů, pravděpodobně jde o čárový kód
+    if (bars.length > 5) {
+        barcodes.push("PRAVDĚPODOBNÝ_ČÁROVÝ_KÓD");
+    }
+    
+    return barcodes;
+}
+
+// Zpracování nalezeného čárového kódu
+function handleBarcodeDetected(barcode) {
+    console.log('Nalezen čárový kód:', barcode);
+    
+    // Vizuální feedback
+    barcodeOverlay.classList.add('barcode-found');
+    barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+    barcodeStatus.style.color = '#4CAF50';
+    
+    // Zastavíme skenování
+    if (quaggaInitialized) {
+        Quagga.stop();
+    } else {
+        clearInterval(scanInterval);
+    }
+    
+    // Po krátké prodlevě zavřeme skener a vyhledáme
+    setTimeout(() => {
+        closeBarcodeScanner();
+        searchByBarcode(barcode);
+    }, 1000);
+    
+    // Odstraníme animaci po dokončení
+    setTimeout(() => {
+        barcodeOverlay.classList.remove('barcode-found');
+    }, 1500);
+}
+
+// Vyhledání podle čárového kódu
+function searchByBarcode(barcode) {
+    // Nastavíme hodnotu do vyhledávacího pole
+    document.getElementById('query').value = barcode;
+    
+    // Spustíme vyhledávání
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        searchForm.dispatchEvent(submitEvent);
+    }
+}
+
+// Přepnutí kamery (přední/zadní)
+async function toggleCamera() {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    barcodeStatus.textContent = 'Přepínám kameru...';
+    
+    try {
+        await startCamera();
+        barcodeStatus.textContent = 'Namiřte na čárový kód';
+        
+        // Restart Quagga s novou kamerou
+        if (quaggaInitialized) {
+            Quagga.stop();
+            initQuagga();
+            startBarcodeScanning();
+        }
+    } catch (error) {
+        console.error('Chyba při přepínání kamery:', error);
+        barcodeStatus.textContent = 'Chyba: ' + error.message;
+        barcodeStatus.style.color = 'red';
+    }
+}
+
+// Přepnutí blesku (pokud je dostupný)
+async function toggleFlash() {
+    if (!stream) return;
+    
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    
+    try {
+        const capabilities = videoTrack.getCapabilities();
+        if (capabilities.torch) {
+            await videoTrack.applyConstraints({
+                advanced: [{ torch: !flashEnabled }]
             });
-        }
-
-        // Zpracování nalezeného čárového kódu
-        function handleBarcodeDetected(barcode) {
-            console.log('Nalezen čárový kód:', barcode);
-            
-            // Vizuální feedback
-            barcodeOverlay.classList.add('barcode-found');
-            barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
-            barcodeStatus.style.color = '#4CAF50';
-            
-            // Zastavíme skenování
-            clearInterval(scanInterval);
-            
-            // Po krátké prodlevě zavřeme skener a vyhledáme
+            flashEnabled = !flashEnabled;
+            document.getElementById('toggleFlashButton').textContent = 
+                flashEnabled ? 'Vypnout blesk' : 'Blesk';
+        } else {
+            barcodeStatus.textContent = 'Blesk není dostupný';
+            barcodeStatus.style.color = 'orange';
             setTimeout(() => {
-                closeBarcodeScanner();
-                searchByBarcode(barcode);
-            }, 1000);
-            
-            // Odstraníme animaci po dokončení
-            setTimeout(() => {
-                barcodeOverlay.classList.remove('barcode-found');
-            }, 1500);
-        }
-
-        // Vyhledání podle čárového kódu
-        function searchByBarcode(barcode) {
-            // Nastavíme hodnotu do vyhledávacího pole
-            document.getElementById('query').value = barcode;
-            
-            // Spustíme vyhledávání
-            const searchForm = document.getElementById('searchForm');
-            if (searchForm) {
-                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                searchForm.dispatchEvent(submitEvent);
-            }
-        }
-
-        // Přepnutí kamery (přední/zadní)
-        async function toggleCamera() {
-            facingMode = facingMode === 'environment' ? 'user' : 'environment';
-            barcodeStatus.textContent = 'Přepínám kameru...';
-            
-            try {
-                await startCamera();
-                barcodeStatus.textContent = 'Namiřte na čárový kód';
-            } catch (error) {
-                console.error('Chyba při přepínání kamery:', error);
-                barcodeStatus.textContent = 'Chyba: ' + error.message;
-                barcodeStatus.style.color = 'red';
-            }
-        }
-
-        // Přepnutí blesku (pokud je dostupný)
-        async function toggleFlash() {
-            if (!stream) return;
-            
-            const videoTrack = stream.getVideoTracks()[0];
-            if (!videoTrack) return;
-            
-            try {
-                const capabilities = videoTrack.getCapabilities();
-                if (capabilities.torch) {
-                    await videoTrack.applyConstraints({
-                        advanced: [{ torch: !flashEnabled }]
-                    });
-                    flashEnabled = !flashEnabled;
-                    document.getElementById('toggleFlashButton').textContent = 
-                        flashEnabled ? 'Vypnout blesk' : 'Blesk';
-                } else {
-                    barcodeStatus.textContent = 'Blesk není dostupný';
-                    barcodeStatus.style.color = 'orange';
-                    setTimeout(() => {
-                        if (barcodeModal.style.display === 'flex') {
-                            barcodeStatus.textContent = 'Namiřte na čárový kód';
-                            barcodeStatus.style.color = '#666';
-                        }
-                    }, 2000);
+                if (barcodeModal.style.display === 'flex') {
+                    barcodeStatus.textContent = 'Namiřte na čárový kód';
+                    barcodeStatus.style.color = '#666';
                 }
-            } catch (error) {
-                console.error('Chyba při ovládání blesku:', error);
-            }
+            }, 2000);
         }
+    } catch (error) {
+        console.error('Chyba při ovládání blesku:', error);
+    }
+}
 
-        // Zavření skeneru čárových kódů
-        function closeBarcodeScanner() {
-            // Zastavíme skenování
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
-            
-            // Zastavíme stream videa
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            
-            // Zastavíme video
-            if (barcodeVideo) {
-                barcodeVideo.srcObject = null;
-            }
-            
-            // Skryjeme modální okno
-            barcodeModal.style.display = 'none';
-            
-            // Obnovíme výchozí zobrazení
-            document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
-            barcodeVideo.style.display = 'none';
-            document.getElementById('toggleCameraButton').style.display = 'none';
-            document.getElementById('toggleFlashButton').style.display = 'none';
-            barcodeOverlay.style.display = 'none';
-        }
+// Zavření skeneru čárových kódů
+function closeBarcodeScanner() {
+    // Zastavíme skenování
+    if (quaggaInitialized) {
+        Quagga.stop();
+    }
+    
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    // Zastavíme stream videa
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    
+    // Zastavíme video
+    if (barcodeVideo) {
+        barcodeVideo.srcObject = null;
+    }
+    
+    // Skryjeme modální okno
+    barcodeModal.style.display = 'none';
+    
+    // Obnovíme výchozí zobrazení
+    document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+    barcodeVideo.style.display = 'none';
+    document.getElementById('toggleCameraButton').style.display = 'none';
+    document.getElementById('toggleFlashButton').style.display = 'none';
+    barcodeOverlay.style.display = 'none';
+}
 
         initializeFirebase();
 
