@@ -1431,6 +1431,7 @@ function restartQuagga() {
             
             // Resetujeme stav
             quaggaInitialized = false;
+            lastDetectedBarcode = null;
             
             // Počkáme chvíli
             setTimeout(() => {
@@ -1522,6 +1523,17 @@ function startBarcodeScanning() {
         scanInterval = null;
     }
     
+    // Nastavíme časový limit pro skenování (20 sekund)
+    if (detectionTimeout) {
+        clearTimeout(detectionTimeout);
+    }
+    detectionTimeout = setTimeout(() => {
+        console.log('Časový limit skenování vypršel');
+        barcodeStatus.textContent = 'Časový limit vypršel - zkuste to znovu';
+        barcodeStatus.style.color = 'orange';
+        restartQuagga();
+    }, 20000);
+    
     // ZKONTROLUJEME, zda je Quagga připravena a video funguje
     if (quaggaInitialized && barcodeVideo && barcodeVideo.srcObject) {
         try {
@@ -1539,6 +1551,7 @@ function startBarcodeScanning() {
         startCanvasFallback();
     }
 }
+
 
 // Detekce čárových kódů pomocí canvasu (fallback)
 function detectBarcodesWithCanvas() {
@@ -1649,15 +1662,20 @@ function extractNumericPattern(bars) {
     return null;
 }
 
+let lastDetectedBarcode = null;
+let detectionTimeout = null;
+
 // Zpracování nalezeného čárového kódu
 function handleBarcodeDetected(barcode) {
+    if (lastDetectedBarcode === barcode) {
+        console.log('Ignoruji opakovanou detekci stejného kódu:', barcode);
+        return;
+    }
     console.log('Nalezen čárový kód:', barcode);
     
-    // PŘIDANÁ VALIDACE - kontrolujeme délku a číselný formát
-    const isValidEAN = /^\d{8}$|^\d{13}$/.test(barcode);
-    const isValidUPC = /^\d{12}$/.test(barcode);
-
-    if (!isValidEAN && !isValidUPC) {
+    // Validace formátu - EAN by měl mít 8 nebo 13 číslic
+    const isValidFormat = /^\d{8}$|^\d{13}$/.test(barcode);
+    if (!isValidFormat) {
         console.log('Ignoruji neplatný formát kódu:', barcode);
         return;
     }
@@ -1666,15 +1684,17 @@ function handleBarcodeDetected(barcode) {
     const hasValidChecksum = validateEANChecksum(barcode);
     
     if (!hasValidChecksum) {
-        console.log('Checksum neplatný, ale pokračuji s kódem:', barcode);
-        // Můžete přidat vizuální varování, ale neblokovat
+        console.log('Neplatný checksum pro kód:', barcode);
         barcodeStatus.textContent = `Nalezen kód (neplatný checksum): ${barcode}`;
         barcodeStatus.style.color = 'orange';
-    } else {
-        barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
-        barcodeStatus.style.color = '#4CAF50';
+        return;
     }
     
+    // Pokud vše projde, uložíme a zpracujeme kód
+    lastDetectedBarcode = barcode;
+    barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+    barcodeStatus.style.color = '#4CAF50';
+
     // Vizuální feedback
     barcodeOverlay.classList.add('barcode-found');
     
@@ -1835,6 +1855,12 @@ async function toggleFlash() {
 // Zavření skeneru čárových kódů
 function closeBarcodeScanner() {
     console.log('Zavírám skener...');
+    
+    // Zastavíme časový limit
+    if (detectionTimeout) {
+        clearTimeout(detectionTimeout);
+        detectionTimeout = null;
+    }
     
     // Zastavíme skenování
     stopBarcodeScanning();
