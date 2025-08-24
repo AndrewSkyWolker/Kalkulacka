@@ -1160,6 +1160,42 @@ let flashEnabled = false;
 let scanInterval = null;
 let quaggaInitialized = false;
 
+function debugCameraStream() {
+    if (barcodeVideo && barcodeVideo.srcObject) {
+        console.log('Video dimensions:', barcodeVideo.videoWidth, 'x', barcodeVideo.videoHeight);
+        console.log('Video ready state:', barcodeVideo.readyState);
+        console.log('Stream active:', barcodeVideo.srcObject.active);
+        
+        const tracks = barcodeVideo.srcObject.getVideoTracks();
+        if (tracks.length > 0) {
+            console.log('Track settings:', tracks[0].getSettings());
+        }
+    }
+}
+
+// Volání v openBarcodeScanner po startCamera
+async function openBarcodeScanner() {
+    barcodeModal.style.display = 'flex';
+    barcodeStatus.textContent = 'Inicializace...';
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+        barcodeStatus.style.color = 'red';
+        return;
+    }
+
+    try {
+        await startCamera();
+        debugCameraStream(); // Debug info
+        barcodeStatus.textContent = 'Namiřte na čárový kód';
+        startBarcodeScanning();
+    } catch (error) {
+        console.error('Chyba při inicializaci kamery:', error);
+        barcodeStatus.textContent = 'Chyba: ' + error.message;
+        barcodeStatus.style.color = 'red';
+    }
+}
+
 // Inicializace skeneru čárových kódů
 function initBarcodeScanner() {
     barcodeModal = document.getElementById('barcodeModal');
@@ -1178,7 +1214,7 @@ function initBarcodeScanner() {
     document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
     
     // Inicializace QuaggaJS
-    initQuagga();
+    // initQuagga();
 }
 
 // Inicializace QuaggaJS
@@ -1194,36 +1230,74 @@ function initQuagga() {
                     height: 480,
                     facingMode: facingMode
                 },
+                area: { // Definiujte oblast pro skenování
+                    top: "25%",
+                    right: "25%",
+                    left: "25%",
+                    bottom: "25%"
+                }
             },
             decoder: {
                 readers: [
-                    "code_128_reader",
-                    "ean_reader",
+                    "ean_reader", // Prioritně EAN pro potraviny
                     "ean_8_reader",
-                    "code_39_reader",
                     "upc_reader",
-                    "upc_e_reader"
+                    "upc_e_reader",
+                    "code_128_reader",
+                    "code_39_reader"
                 ]
-            }
+            },
+            locate: true, // Povolte lokalizaci čárových kódů
+            frequency: 10 // Frekvence skenování
         }, function(err) {
             if (err) {
                 console.error("Chyba při inicializaci Quagga:", err);
                 barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
                 barcodeStatus.style.color = 'red';
+                
+                // Fallback na canvas detection
+                startCanvasFallback();
                 return;
             }
             quaggaInitialized = true;
             console.log("Quagga inicializována");
-        });
-
-        Quagga.onDetected(function(result) {
-            if (result && result.codeResult) {
-                handleBarcodeDetected(result.codeResult.code);
-            }
+            
+            Quagga.onDetected(function(result) {
+                if (result && result.codeResult) {
+                    console.log('Quagga detected:', result.codeResult);
+                    handleBarcodeDetected(result.codeResult.code);
+                }
+            });
+            
+            Quagga.onProcessed(function(result) {
+                if (result) {
+                    // Můžete přidat vizuální feedback
+                }
+            });
         });
     } else {
         console.warn("QuaggaJS není k dispozici");
+        startCanvasFallback();
     }
+}
+
+// Fallback funkce pro canvas detection
+function startCanvasFallback() {
+    barcodeStatus.textContent = 'Používám základní detekci...';
+    barcodeStatus.style.color = 'orange';
+    
+    scanInterval = setInterval(async () => {
+        if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
+            try {
+                const barcodes = await detectBarcodesWithCanvas();
+                if (barcodes.length > 0) {
+                    handleBarcodeDetected(barcodes[0]);
+                }
+            } catch (error) {
+                console.error('Chyba při detekci čárového kódu:', error);
+            }
+        }
+    }, 1000);
 }
 
 // Odeslání ručně zadaného čárového kódu
@@ -1273,8 +1347,9 @@ async function startCamera() {
     const constraints = {
         video: {
             facingMode: facingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 640 }, // Explicitně nastavte šířku
+            height: { ideal: 480 }, // Explicitně nastavte výšku
+            frameRate: { ideal: 30 }
         }
     };
     
@@ -1292,6 +1367,10 @@ async function startCamera() {
         document.getElementById('toggleFlashButton').style.display = 'inline-block';
         barcodeOverlay.style.display = 'block';
         
+        // Explicitně nastavte velikost videa pro Quagga
+        barcodeVideo.width = 640;
+        barcodeVideo.height = 480;
+        
         // Uložíme deviceId pro příště
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
@@ -1301,9 +1380,17 @@ async function startCamera() {
         // Čekáme na načtení videa
         return new Promise((resolve) => {
             barcodeVideo.onloadedmetadata = () => {
-                barcodeVideo.play();
-                resolve();
+                barcodeVideo.play().then(() => {
+                    console.log('Video started playing');
+                    resolve();
+                }).catch(error => {
+                    console.error('Error playing video:', error);
+                    resolve();
+                });
             };
+            
+            // Fallback timeout
+            setTimeout(() => resolve(), 1000);
         });
     } catch (error) {
         console.error('Chyba při přístupu ke kameře:', error);
