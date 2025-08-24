@@ -1249,92 +1249,90 @@ function stopBarcodeScanning() {
 // Inicializace QuaggaJS
 function initQuagga() {
     if (typeof Quagga !== 'undefined') {
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: barcodeVideo,
-                constraints: {
-                    width: 1280, // ZVÝŠIT rozlišení
-                    height: 720,
-                    facingMode: facingMode,
-                    aspectRatio: { ideal: 16/9 }
+        try {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: barcodeVideo,
+                    constraints: {
+                        width: 1280,
+                        height: 720,
+                        facingMode: facingMode,
+                        aspectRatio: { ideal: 16/9 }
+                    },
                 },
-            },
-            decoder: {
-                readers: [
-                    "ean_reader",       // EAN-13
-                    "ean_8_reader",     // EAN-8  
-                    "upc_reader",       // UPC-A
-                    "upc_e_reader"      // UPC-E
-                ],
-                debug: {
-                    drawBoundingBox: true,
-                    showPattern: true,
-                    showFoundPattern: true,
-                    showSkeleton: true,
-                    showLabels: true,
-                    showPatch: true,
-                    showRecalculated: true
+                decoder: {
+                    readers: [
+                        "ean_reader",
+                        "ean_8_reader",
+                        "upc_reader",
+                        "upc_e_reader"
+                    ],
+                    debug: {
+                        drawBoundingBox: true,
+                        showPattern: true,
+                        showFoundPattern: true,
+                        showSkeleton: true,
+                        showLabels: true,
+                        showPatch: true,
+                        showRecalculated: true
+                    }
+                },
+                locator: {
+                    patchSize: "large",
+                    halfSample: false
+                },
+                locate: true,
+                frequency: 5,
+                numOfWorkers: 4,
+                debug: true
+            }, function(err) {
+                if (err) {
+                    console.error("Chyba při inicializaci Quagga:", err);
+                    barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
+                    barcodeStatus.style.color = 'red';
+                    // POKUS O OBNOVU PO CHYBĚ
+                    setTimeout(() => {
+                        if (barcodeModal.style.display === 'flex') {
+                            console.log('Zkouším znovu inicializovat Quaggu...');
+                            initQuagga();
+                        }
+                    }, 1000);
+                    return;
                 }
-            },
-            locator: {
-                patchSize: "large",     // ZVĚTŠIT velikost
-                halfSample: false
-            },
-            locate: true,
-            frequency: 5,               // VYŠŠÍ frekvence
-            numOfWorkers: 4,            // VÍCE workerů
-            debug: true                 // POVOLIT debug
-        }, 
-        function(err) {
-            if (err) {
-                console.error("Chyba při inicializaci Quagga:", err);
-                barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
-                barcodeStatus.style.color = 'red';
-                // POKUS O OBNOVU PO CHYBĚ
-                setTimeout(() => {
-                    if (barcodeModal.style.display === 'flex') {
-                        console.log('Zkouším znovu inicializovat Quaggu...');
-                        initQuagga();
-                    }
-                }, 1000);
-                    
-                return;
-            }
+                
+                quaggaInitialized = true;
+                console.log("Quagga inicializována");
+                
+                Quagga.onDetected(function(result) {
+                    console.log('Quagga result:', result);
+        
+                    if (result && result.codeResult && result.codeResult.code) {
+                        console.log('Detekován kód:', result.codeResult.code, 
+                                   'typ:', result.codeResult.format,
+                                   'confidence:', result.codeResult.confidence);
             
-            quaggaInitialized = true;
-            console.log("Quagga inicializována");
+                        // Přidejte více debug info
+                        if (result.codeResult.decoded) {
+                           console.log('Decoded info:', result.codeResult.decoded);
+                        }
             
-            Quagga.onDetected(function(result) {
-                console.log('Quagga result:', result);
-    
-                if (result && result.codeResult && result.codeResult.code) {
-                    console.log('Detekován kód:', result.codeResult.code, 
-                               'typ:', result.codeResult.format,
-                               'confidence:', result.codeResult.confidence);
-        
-                    // Přidejte více debug info
-                    if (result.codeResult.decoded) {
-                       console.log('Decoded info:', result.codeResult.decoded);
+                        // Filtr podle confidence pokud je dostupná
+                        if (result.codeResult.confidence !== undefined && 
+                            result.codeResult.confidence < 0.3) {
+                            console.log('Příliš nízká confidence, ignoruji:', result.codeResult.confidence);
+                            return;
+                        }
+            
+                        handleBarcodeDetected(result.codeResult.code);
                     }
-        
-                    // Filtr podle confidence pokud je dostupná
-                    if (result.codeResult.confidence !== undefined && 
-                        result.codeResult.confidence < 0.3) {
-                        console.log('Příliš nízká confidence, ignoruji:', result.codeResult.confidence);
-                        return;
-                    }
-        
-                    handleBarcodeDetected(result.codeResult.code);
-                }
+                });
             });
-        
-        }); catch (error) {
+        } catch (error) {
             console.error('Výjimka při inicializaci Quaggy:', error);
         }
     }
-    updateScanningStatus('Inicializuji Quaggu...', 'info');
 }
 
 // Fallback funkce pro canvas detection
@@ -1370,14 +1368,6 @@ function submitManualBarcode() {
     }
 }
 
-// Přidejte funkci pro status
-function updateScanningStatus(message, type = 'info') {
-    const statusElement = document.getElementById('scanningStatus');
-    if (statusElement) {
-        statusElement.textContent = message;
-        statusElement.className = `scanning-status ${type}`;
-    }
-}
 
 // Otevření skeneru čárových kódů
 async function openBarcodeScanner() {
