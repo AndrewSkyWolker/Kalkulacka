@@ -1147,8 +1147,7 @@
             }
         }
 
-        // --- Barcode Scanner Functions ---
-        // --- Barcode Scanner Functions ---
+// --- Barcode Scanner Functions ---
 let barcodeModal = null;
 let barcodeVideo = null;
 let barcodeCanvas = null;
@@ -1174,98 +1173,12 @@ function initBarcodeScanner() {
     document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
     document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
     document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
+    
+    // Event listener pro tlačítko skeneru
     document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
     
     // Inicializace QuaggaJS
     initQuagga();
-    if (typeof Quagga !== 'undefined') {
-        initQuagga();
-    } else {
-        console.warn("QuaggaJS není k dispozici, použije se základní detekce");
-    }
-}
-
-// Přidejte lepší logiku pro detekci čárových kódů
-async function detectBarcodesWithCanvas() {
-    return new Promise((resolve) => {
-        if (!barcodeVideo.videoWidth || !barcodeVideo.videoHeight) {
-            resolve([]);
-            return;
-        }
-        
-        const context = barcodeCanvas.getContext('2d');
-        const width = barcodeVideo.videoWidth;
-        const height = barcodeVideo.videoHeight;
-        
-        barcodeCanvas.width = width;
-        barcodeCanvas.height = height;
-        
-        context.drawImage(barcodeVideo, 0, 0, width, height);
-        
-        // Použijte externí knihovnu pro lepší detekci, např. JsBarcode
-        try {
-            // Toto je zjednodušená verze - v reálném použití byste použili knihovnu
-            const imageData = context.getImageData(0, 0, width, height);
-            const detectedBarcodes = detectBarcodesWithImprovedAlgorithm(imageData);
-            resolve(detectedBarcodes);
-        } catch (error) {
-            console.error('Chyba při detekci čárového kódu:', error);
-            resolve([]);
-        }
-    });
-}
-
-// Vylepšená detekce čárových kódů
-function detectBarcodesWithImprovedAlgorithm(imageData) {
-    const data = imageData.data;
-    const width = imageData.width;
-    const height = imageData.height;
-    const barcodes = [];
-    
-    // Projedeme několik řádků (ne jen střed)
-    for (let y = height * 0.3; y <= height * 0.7; y += Math.floor(height * 0.1)) {
-        let inBar = false;
-        let barStart = 0;
-        let bars = [];
-        
-        for (let x = 0; x < width; x++) {
-            const index = (y * width + x) * 4;
-            const r = data[index];
-            const g = data[index + 1];
-            const b = data[index + 2];
-            
-            const brightness = (r + g + b) / 3;
-            const isDark = brightness < 100; // Nižší threshold pro lepší detekci
-            
-            if (isDark && !inBar) {
-                inBar = true;
-                barStart = x;
-            } else if (!isDark && inBar) {
-                inBar = false;
-                bars.push({ start: barStart, end: x, width: x - barStart });
-            }
-        }
-        
-        // Pokud jsme našli dostatek pruhů, pravděpodobně jde o čárový kód
-        if (bars.length > 8) {
-            // Zkusíme extrahovat číselnou hodnotu z pozic pruhů
-            const estimatedBarcode = estimateBarcodeFromBars(bars);
-            if (estimatedBarcode) {
-                barcodes.push(estimatedBarcode);
-            }
-        }
-    }
-    
-    return barcodes;
-}
-
-function estimateBarcodeFromBars(bars) {
-    // Jednoduchá heuristika pro odhad EAN kódu z pruhů
-    // V reálné aplikaci byste použili proper knihovnu
-    if (bars.length >= 13) {
-        return "PRAVDĚPODOBNY_EAN_" + Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
-    }
-    return null;
 }
 
 // Inicializace QuaggaJS
@@ -1435,6 +1348,11 @@ function startBarcodeScanning() {
 // Detekce čárových kódů pomocí canvasu (fallback)
 function detectBarcodesWithCanvas() {
     return new Promise((resolve) => {
+        if (!barcodeVideo.videoWidth || !barcodeVideo.videoHeight) {
+            resolve([]);
+            return;
+        }
+        
         const context = barcodeCanvas.getContext('2d');
         const width = barcodeVideo.videoWidth;
         const height = barcodeVideo.videoHeight;
@@ -1446,13 +1364,15 @@ function detectBarcodesWithCanvas() {
         // Nakreslíme aktuální snímek videa na canvas
         context.drawImage(barcodeVideo, 0, 0, width, height);
         
-        // Získáme imageData z canvasu
-        const imageData = context.getImageData(0, 0, width, height);
-        
-        // Jednoduchá detekce čárových kódů - hledání kontrastních pruhů
-        // Toto je velmi základní implementace
-        const detectedBarcodes = detectSimpleBarcodes(imageData);
-        resolve(detectedBarcodes);
+        try {
+            // Zjednodušená detekce - v reálné aplikaci byste použili knihovnu
+            const imageData = context.getImageData(0, 0, width, height);
+            const detectedBarcodes = detectSimpleBarcodes(imageData);
+            resolve(detectedBarcodes);
+        } catch (error) {
+            console.error('Chyba při detekci:', error);
+            resolve([]);
+        }
     });
 }
 
