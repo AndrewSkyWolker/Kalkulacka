@@ -262,6 +262,31 @@
         let currentEditingIngredientIndex = null; // Store the index of the ingredient being edited
         const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}"; // Add this line
 
+// PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
+function searchByBarcode(barcode) {
+    console.log('Vyhledávám podle čárového kódu:', barcode);
+    
+    // Nastavíme hodnotu do vyhledávacího pole
+    const searchInput = document.getElementById('query');
+    if (searchInput) {
+        searchInput.value = barcode;
+    }
+    
+    // Spustíme vyhledávání
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        // Vytvoříme a odešleme submit event
+        const submitEvent = new Event('submit', { 
+            bubbles: true, 
+            cancelable: true 
+        });
+        searchForm.dispatchEvent(submitEvent);
+    } else {
+        console.error('Search form element not found');
+    }
+}
+
+
         // --- Helper functions (Moved to global scope) ---
         function parseValueAndUnit(valueString) {
             if (typeof valueString !== 'string' && typeof valueString !== 'number') {
@@ -1275,17 +1300,24 @@ function initQuagga() {
             
             Quagga.onDetected(function(result) {
                 console.log('Quagga result:', result);
+    
                 if (result && result.codeResult && result.codeResult.code) {
                     console.log('Detekován kód:', result.codeResult.code, 
                                'typ:', result.codeResult.format,
                                'confidence:', result.codeResult.confidence);
-                    
-                    // PŘIDAT FILTR PODLE DŮVĚRY
-                    if (result.codeResult.confidence < 0.4) {
+        
+                    // Přidejte více debug info
+                    if (result.codeResult.decoded) {
+                       console.log('Decoded info:', result.codeResult.decoded);
+                    }
+        
+                    // Filtr podle confidence pokud je dostupná
+                    if (result.codeResult.confidence !== undefined && 
+                        result.codeResult.confidence < 0.3) {
                         console.log('Příliš nízká confidence, ignoruji:', result.codeResult.confidence);
                         return;
                     }
-                    
+        
                     handleBarcodeDetected(result.codeResult.code);
                 }
             });
@@ -1581,7 +1613,44 @@ function handleBarcodeDetected(barcode) {
     // PŘIDANÁ VALIDACE - kontrolujeme délku a číselný formát
     const isValidEAN = /^\d{8}$|^\d{13}$/.test(barcode);
     const isValidUPC = /^\d{12}$/.test(barcode);
+
+    if (!isValidEAN && !isValidUPC) {
+        console.log('Ignoruji neplatný formát kódu:', barcode);
+        return;
+    }
     
+    // Validace checksum - PŘIDÁNO PODMÍNĚNÉ PŘIJETÍ
+    const hasValidChecksum = validateEANChecksum(barcode);
+    
+    if (!hasValidChecksum) {
+        console.log('Checksum neplatný, ale pokračuji s kódem:', barcode);
+        // Můžete přidat vizuální varování, ale neblokovat
+        barcodeStatus.textContent = `Nalezen kód (neplatný checksum): ${barcode}`;
+        barcodeStatus.style.color = 'orange';
+    } else {
+        barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+        barcodeStatus.style.color = '#4CAF50';
+    }
+    
+    // Vizuální feedback
+    barcodeOverlay.classList.add('barcode-found');
+    
+    // Zastavíme skenování
+    if (quaggaInitialized) {
+        Quagga.stop();
+    }
+    
+    // Po krátké prodlevě zavřeme skener a vyhledáme
+    setTimeout(() => {
+        closeBarcodeScanner();
+        searchByBarcode(barcode); // Tady musí funkce existovat
+    }, 1000);
+    
+    // Odstraníme animaci po dokončení
+    setTimeout(() => {
+        barcodeOverlay.classList.remove('barcode-found');
+    }, 1500);
+
     // Přidejte do handleBarcodeDetected
     if (barcode === '12526048' && expectedCode === '8595229926818') {
         console.log('Opravuji detekovaný kód na správný');
@@ -1630,18 +1699,41 @@ if (commonMisreads[barcode]) {
 
 // PŘIDEJTE VALIDAČNÍ FUNKCI PRO EAN
 function validateEANChecksum(barcode) {
-    if (barcode.length !== 8 && barcode.length !== 13) return false;
+    if (barcode.length !== 8 && barcode.length !== 13) {
+        console.log('Neplatná délka kódu:', barcode.length);
+        return false;
+    }
     
     const digits = barcode.split('').map(Number);
     const checksumDigit = digits.pop();
     
     let sum = 0;
-    for (let i = 0; i < digits.length; i++) {
-        sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+    
+    if (barcode.length === 8) {
+        // EAN-8: váhy 3, 1, 3, 1, 3, 1, 3
+        for (let i = 0; i < digits.length; i++) {
+            sum += digits[i] * (i % 2 === 0 ? 3 : 1);
+        }
+    } else {
+        // EAN-13: váhy 1, 3, 1, 3, ...
+        for (let i = 0; i < digits.length; i++) {
+            sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+        }
     }
     
     const calculatedChecksum = (10 - (sum % 10)) % 10;
-    return calculatedChecksum === checksumDigit;
+    const isValid = calculatedChecksum === checksumDigit;
+    
+    if (!isValid) {
+        console.log('Checksum neplatný:', {
+            kód: barcode,
+            očekávaný: checksumDigit,
+            vypočtený: calculatedChecksum,
+            suma: sum
+        });
+    }
+    
+    return isValid;
 }
 
 // Přepnutí kamery (přední/zadní)
