@@ -1025,7 +1025,29 @@ button:hover { background-color: #0056b3; }
 }
 
 .barcode-found {
-    animation: barcodeFound 0.5s ease-in-out 3;
+    animation: barcodeSuccess 1s ease-in-out;
+    border-color: #4CAF50 !important;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+}
+
+@keyframes barcodeSuccess {
+    0% { border-color: #4CAF50; box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+    50% { border-color: #4CAF50; box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
+    100% { border-color: #4CAF50; box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.scanning-status {
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
+}
+
+#barcodeStatus {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
 /* Indikátor načítání pro skener */
