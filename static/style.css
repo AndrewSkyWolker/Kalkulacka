@@ -1066,3 +1066,25 @@ button:hover { background-color: #0056b3; }
     color: #4CAF50;
     font-weight: bold;
 }
+
+/* Styly pro tlačítko zastavení skenování */
+#stopScanButton {
+    margin: 10px auto;
+    display: block;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+#stopScanButton:hover {
+    background-color: #d32f2f;
+}
+
+#stopScanButton:active {
+    background-color: #b71c1c;
+}
