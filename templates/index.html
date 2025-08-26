@@ -1762,14 +1762,7 @@ function handleBarcodeDetected(barcode) {
         barcode = '8595229926818'; // MANUÁLNÍ OPRAVA
     }
 
-    // Nebo přidejte mapping častých chyb
-    const commonMisreads = {
-        '3921244567890': '6901234567843', // Přidejte další common chyby
-        '12526048': '8595229926818',
-        '12345678': '8594001000108',
-        // ... další common chyby
-    };
-
+    
 if (commonMisreads[barcode]) {
     console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
     barcode = commonMisreads[barcode];
