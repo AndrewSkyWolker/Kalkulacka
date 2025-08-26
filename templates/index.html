@@ -1755,8 +1755,8 @@ function handleBarcodeDetected(barcode, quaggaResult) {
 
   // Validace formátu a checksumu
   const isValid = isValidEAN(barcode);
-  const patternAnalysis = analyzePattern(result.pattern);
-  console.log('Pattern analysis:', patternAnalysis);
+  //const patternAnalysis = analyzePattern(result.pattern);
+  //console.log('Pattern analysis:', patternAnalysis);
 
   if (!isValid) {
     console.log('Neplatný formát nebo checksum kódu:', barcode);
