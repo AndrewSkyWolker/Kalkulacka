@@ -1068,10 +1068,20 @@ button:hover { background-color: #0056b3; }
 
 /* Přidejte do CSS lepší styly pro skener */
 #barcodeOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 30%;
     border: 2px solid #4CAF50;
     border-radius: 8px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
     pointer-events: none;
+    display: none;
+    /* SNÍŽENÝ KONTRAST - průhlednost */
+    opacity: 0.7;
+    /* JEMNĚJŠÍ STÍN */
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
 }
 
 .barcode-scanning {
