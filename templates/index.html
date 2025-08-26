@@ -1737,16 +1737,16 @@ let lastDetectedBarcode = null;
 let detectionTimeout = null;
 
 // Zpracování nalezeného čárového kódu
-function handleBarcodeDetected(barcode) {
+function handleBarcodeDetected(barcode, quaggaResult) {
   if (lastDetectedBarcode === barcode) {
     console.log('Ignoruji opakovanou detekci stejného kódu:', barcode);
     return;
   }
   
   console.log('Nalezen čárový kód:', barcode);
-  console.log('Raw pattern:', result.pattern);
-  console.log('Pattern length:', result.pattern.length);
-  console.log('Bounding box:', result.box);
+  console.log('Raw pattern:', quaggaResult.pattern);
+  console.log('Pattern length:', quaggaResult.pattern.length);
+  console.log('Bounding box:', quaggaResult.box);
   // Upravte handleBarcodeDetected - přidejte před validací:
     if (commonMisreads[barcode]) {
     console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
