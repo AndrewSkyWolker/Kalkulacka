@@ -14,7 +14,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# URL pro autocomplete API KalorickýchTabulky.cz
+#  URL pro autocomplete API KalorickýchTabulky.cz
 SEARCH_API_URL = "https://www.kaloricketabulky.cz/autocomplete/foodstuff-activity-meal"
 # Základní URL pro detailní stránky
 BASE_WEB_URL = "https://www.kaloricketabulky.cz"
