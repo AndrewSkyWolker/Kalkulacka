@@ -184,11 +184,6 @@
         <div class="modal-content" style="max-width: 90%; height: 70%;">
             <span class="close-button" id="closeBarcodeModal">&times;</span>
             <h3>Skenovat čárový kód</h3>
-            <button id="stopScanButton" style="margin: 10px auto; display: block; padding: 10px 20px; 
-                    background-color: #f44336; color: white; border: none; border-radius: 8px; 
-                   cursor: pointer; display: none;">
-                Zastavit skenování
-            </button>
             <div id="barcodeScannerContainer" style="width: 100%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; border-radius: 8px;">
                 <div id="barcodeUnsupportedMessage" style="text-align: center; padding: 20px;">
                     <p style="font-size: 18px; margin-bottom: 15px;">🔒 Skenování čárových kódů není v tomto prohlížeči dostupné</p>
@@ -209,7 +204,6 @@
             <div style="margin-top: 15px; text-align: center;">
                 <button id="toggleCameraButton" style="margin: 0 5px; display: none;">Přepnout kameru</button>
                 <button id="toggleFlashButton" style="margin: 0 5px; display: none;">Blesk</button>
-                <button id="focusButton" style="margin: 0 5px;">Zaostřit</button>
             </div>
             <div id="barcodeStatus" style="text-align: center; margin-top: 10px; color: #666;"></div>
         </div>
@@ -244,7 +238,6 @@
 
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-
         const commonMisreads = {
         '3921244567890': '6901234567843',
         '12526048': '8595229926818',
@@ -252,8 +245,6 @@
         '21107887': '6901234567843', // Nově detekovaný kód
         // Přidejte další časté chyby čtení
         };
-
-
 
         let app, db, auth, userId;
         let isAuthReady = false;
@@ -274,47 +265,29 @@
         let currentEditingIngredientIndex = null; // Store the index of the ingredient being edited
         const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}"; // Add this line
 
-        
-// Přidejte funkci pro manuální zaostření
-document.getElementById('focusButton').addEventListener('click', async () => {
-  if (stream) {
-    const videoTrack = stream.getVideoTracks()[0];
-    if (videoTrack && typeof videoTrack.getCapabilities === 'function') {
-      try {
-        await videoTrack.applyConstraints({
-          advanced: [{ focusMode: "manual" }, { focusDistance: 0.1 }]
-        });
-        console.log("Manuální zaostření nastaveno");
-      } catch (error) {
-        console.log("Zaostřování není podporováno:", error);
-      }
-    }
-  }
-});
-
-// PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
-function searchByBarcode(barcode) {
-    console.log('Vyhledávám podle čárového kódu:', barcode);
+        // PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
+        function searchByBarcode(barcode) {
+            console.log('Vyhledávám podle čárového kódu:', barcode);
     
-    // Nastavíme hodnotu do vyhledávacího pole
-    const searchInput = document.getElementById('query');
-    if (searchInput) {
-        searchInput.value = barcode;
-    }
+            // Nastavíme hodnotu do vyhledávacího pole
+            const searchInput = document.getElementById('query');
+            if (searchInput) {
+                searchInput.value = barcode;
+            }
     
-    // Spustíme vyhledávání
-    const searchForm = document.getElementById('searchForm');
-    if (searchForm) {
-        // Vytvoříme a odešleme submit event
-        const submitEvent = new Event('submit', { 
-            bubbles: true, 
-            cancelable: true 
-        });
-        searchForm.dispatchEvent(submitEvent);
-    } else {
-        console.error('Search form element not found');
-    }
-}
+            // Spustíme vyhledávání
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
+                // Vytvoříme a odešleme submit event
+                const submitEvent = new Event('submit', { 
+                    bubbles: true, 
+                    cancelable: true 
+                });
+                searchForm.dispatchEvent(submitEvent);
+            } else {
+                console.error('Search form element not found');
+            }
+        }
 
 
         // --- Helper functions (Moved to global scope) ---
@@ -1247,33 +1220,11 @@ function initBarcodeScanner() {
     document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
     document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
     
-    // PŘIDEJTE TOTO - event listener pro nové tlačítko
-    document.getElementById('stopScanButton').addEventListener('click', stopBarcodeScanning);
-
     // Event listener pro tlačítko skeneru
     document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
     
     // Inicializace QuaggaJS
     initQuagga();
-}
-
-function stopBarcodeScanning() {
-    // Zastavíme skenování
-    if (quaggaInitialized) {
-        Quagga.stop();
-    }
-    
-    if (scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
-    }
-    
-    // Skryjeme tlačítko "Zastavit"
-    document.getElementById('stopScanButton').style.display = 'none';
-    
-    // Změníme status
-    barcodeStatus.textContent = 'Skenování zastaveno';
-    barcodeStatus.style.color = '#666';
 }
 
 // Inicializace QuaggaJS
@@ -1406,6 +1357,9 @@ function submitManualBarcode() {
     }
 }
 
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
 
 // Otevření skeneru čárových kódů
 async function openBarcodeScanner() {
@@ -1413,21 +1367,33 @@ async function openBarcodeScanner() {
     barcodeModal.style.display = 'flex';
     barcodeStatus.textContent = 'Inicializace...';
     barcodeStatus.innerHTML = `
-    <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
-    <div style="display: flex; justify-content: center; margin: 10px 0;">
-      <div style="border: 2px solid red; padding: 5px; border-radius: 5px;">
-        📷 Zaostřete na kód
-      </div>
+    <div style="margin-bottom: 10px; font-weight: bold;">🔍 Skenování čárového kódu</div>
+    <div style="font-size: 14px; color: #666; line-height: 1.4;">
+        • Namiřte kód do zeleného rámečku<br>
+        • Zaostření proběhne automaticky<br>
+        • Pro ukončení klikněte mimo okno
     </div>
+`;
+
+    if (isMobileDevice()) {
+  barcodeStatus.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
+    <div style="font-size: 12px; color: #666;">
+      • Zaostření proběhne automaticky<br>
+      • Držte zařízení stabilně<br>
+      • Zkontrolujte osvětlení
+    </div>
+  `;
+} else {
+  barcodeStatus.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
     <div style="font-size: 12px; color: #666;">
       • Ujistěte se, že kód je v dobrém osvětlení<br>
-      • Držte kód rovně a v celém zobrazení<br>
-      • Zaostřete pomocí tlačítka "Zaostřit"
+      • Držte kód rovně před kamerou<br>
+      • Přibližte/oddalte podle potřeby
     </div>
-  `;  
-
-    // ZOBRAZÍME TLAČÍTKO "ZASTAVIT"
-    document.getElementById('stopScanButton').style.display = 'block';
+  `;
+}
     
     // Zkontrolujeme, zda je API dostupné
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1508,14 +1474,6 @@ async function startCamera() {
             height: { ideal: 1080, min: 720 },
             frameRate: { ideal: 60 }, // vyšší fps pro plynulejší video
             facingMode: facingMode,
-            // Přidejte explicitní požadavky na kvalitu
-         advanced: [
-            { focusMode: "continuous" },
-            { exposureMode: "continuous" },
-            { whiteBalanceMode: "continuous" },
-            { contrast: { min: 80 } },
-            { brightness: { ideal: 70 } }
-        ]
         }
     };
     
@@ -1944,10 +1902,7 @@ function closeBarcodeScanner() {
         clearTimeout(detectionTimeout);
         detectionTimeout = null;
     }
-    
-    // Zastavíme skenování
-    stopBarcodeScanning();
-    
+        
     // Zastavíme stream videa
     if (stream) {
         try {
@@ -1971,10 +1926,7 @@ function closeBarcodeScanner() {
     
     // Skryjeme modální okno
     barcodeModal.style.display = 'none';
-    
-    // Skryjeme tlačítko "Zastavit"
-    document.getElementById('stopScanButton').style.display = 'none';
-    
+        
     // Obnovíme výchozí zobrazení
     document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
     barcodeVideo.style.display = 'none';
