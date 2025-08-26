@@ -209,6 +209,7 @@
             <div style="margin-top: 15px; text-align: center;">
                 <button id="toggleCameraButton" style="margin: 0 5px; display: none;">Přepnout kameru</button>
                 <button id="toggleFlashButton" style="margin: 0 5px; display: none;">Blesk</button>
+                <button id="focusButton" style="margin: 0 5px;">Zaostřit</button>
             </div>
             <div id="barcodeStatus" style="text-align: center; margin-top: 10px; color: #666;"></div>
         </div>
@@ -272,6 +273,24 @@
         let currentEditingRecipeId = null; // Store the ID of the recipe being edited
         let currentEditingIngredientIndex = null; // Store the index of the ingredient being edited
         const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}"; // Add this line
+
+        
+// Přidejte funkci pro manuální zaostření
+document.getElementById('focusButton').addEventListener('click', async () => {
+  if (stream) {
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack && typeof videoTrack.getCapabilities === 'function') {
+      try {
+        await videoTrack.applyConstraints({
+          advanced: [{ focusMode: "manual" }, { focusDistance: 0.1 }]
+        });
+        console.log("Manuální zaostření nastaveno");
+      } catch (error) {
+        console.log("Zaostřování není podporováno:", error);
+      }
+    }
+  }
+});
 
 // PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
 function searchByBarcode(barcode) {
@@ -1259,7 +1278,7 @@ function stopBarcodeScanning() {
 
 // Inicializace QuaggaJS
 function initQuagga() {
-    if (typeof Quagga !== 'undefined') {
+  if (typeof Quagga !== 'undefined') {
         try {
             Quagga.init({
                 inputStream: {
@@ -1268,31 +1287,28 @@ function initQuagga() {
                     target: barcodeVideo,
                     constraints: {
                         width: 1280,
-                        height: 720,
+                        height: 720, 
                         facingMode: facingMode,
-                        aspectRatio: { ideal: 16/9 }
+                        aspectRatio: { min: 1, max: 2 }
                     },
                 },
                 decoder: {
-                    readers: [
-                        "ean_reader",
-                        "ean_8_reader",
-                        "upc_reader",
-                        "upc_e_reader"
-                    ],
-                    debug: {
-                        drawBoundingBox: false,
-                        showPattern: false,
-                        showFoundPattern: false,
-                        //showSkeleton: true,
-                        //showLabels: true,
-                        //showPatch: true,
-                        //showRecalculated: true
-                    }
+                    readers: ["ean_reader", "ean_8_reader"], // Primárně EAN
+                    multiple: false,
+                    // Specifická konfigurace pro EAN
+                    resolution: 800, // Zvyšte rozlišení pro lepší detekci
+                    patchSize: "x-large", // Větší oblast pro detekci
                 },
                 locator: {
-                    patchSize: "medium",
-                    halfSample: true
+                    patchSize: "large",
+                    halfSample: true,
+                    // Konfigurace pro lepší detekci EAN-13
+                    debug: {
+                        showCanvas: false,
+                        showPatches: false,
+                        showFoundPatches: false,
+                        showSkeleton: false
+                    }
                 },
                 preprocessor: {
                 // Zvýší kontrast pro lepší čitelnost
@@ -1306,8 +1322,8 @@ function initQuagga() {
                     jagged: 2.0
                     }
                 },
-                frequency: 10,
-                numOfWorkers: 5,
+                frequency: 5,
+                numOfWorkers: 2,
                 debug: false // Vypnout debug pro lepší výkon
                 }, function(err) {
                 if (err) {
@@ -1397,11 +1413,19 @@ async function openBarcodeScanner() {
     barcodeModal.style.display = 'flex';
     barcodeStatus.textContent = 'Inicializace...';
     barcodeStatus.innerHTML = `
-        <div>Skenování spuštěno</div>
-        <div class="scanning-tip">Namiřte na čárový kód ve dobrém osvětlení</div>
-        <div class="scanning-loading">🔍 Skenuji...</div>
-    `;   
-    
+    <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
+    <div style="display: flex; justify-content: center; margin: 10px 0;">
+      <div style="border: 2px solid red; padding: 5px; border-radius: 5px;">
+        📷 Zaostřete na kód
+      </div>
+    </div>
+    <div style="font-size: 12px; color: #666;">
+      • Ujistěte se, že kód je v dobrém osvětlení<br>
+      • Držte kód rovně a v celém zobrazení<br>
+      • Zaostřete pomocí tlačítka "Zaostřit"
+    </div>
+  `;  
+
     // ZOBRAZÍME TLAČÍTKO "ZASTAVIT"
     document.getElementById('stopScanButton').style.display = 'block';
     
@@ -1479,14 +1503,19 @@ async function startCamera() {
     }
     
     const constraints = {
-    video: {
-        facingMode: facingMode,
-        width: { ideal: 1280 }, // Zvýšení rozlišení
-        height: { ideal: 720 },
+        video: {
+            facingMode: facingMode,
+            width: { ideal: 1920 }, // Zvyšte rozlišení
+        height: { ideal: 1080 },
         frameRate: { ideal: 30 },
-        // Přidejte požadavek na autofocus
-        advanced: [{ focusMode: "continuous" }, { focusDistance: { ideal: 0.2 } }]
-    }
+        // Přidejte explicitní požadavky na zaostření
+        advanced: [
+            { focusMode: "continuous" },
+            { focusDistance: { ideal: 0.2 } },
+            { contrast: { min: 50 } },
+            { brightness: { ideal: 60 } }
+        ]
+        }
     };
     
     // Pokud máme uložené deviceId, použijeme ho
