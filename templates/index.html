@@ -1453,12 +1453,14 @@ async function startCamera() {
     }
     
     const constraints = {
-        video: {
-            facingMode: facingMode,
-            width: { ideal: 640 }, // Explicitně nastavte šířku
-            height: { ideal: 480 }, // Explicitně nastavte výšku
-            frameRate: { ideal: 30 }
-        }
+    video: {
+        facingMode: facingMode,
+        width: { ideal: 1280 }, // Zvýšení rozlišení
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 },
+        // Přidejte požadavek na autofocus
+        advanced: [{ focusMode: "continuous" }, { focusDistance: { ideal: 0.2 } }]
+    }
     };
     
     // Pokud máme uložené deviceId, použijeme ho
