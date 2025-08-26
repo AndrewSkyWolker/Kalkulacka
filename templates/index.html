@@ -243,6 +243,17 @@
 
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+
+        const commonMisreads = {
+        '3921244567890': '6901234567843',
+        '12526048': '8595229926818',
+        '12345678': '8594001000108',
+        '21107887': '6901234567843', // Nově detekovaný kód
+        // Přidejte další časté chyby čtení
+        };
+
+
+
         let app, db, auth, userId;
         let isAuthReady = false;
         let userSettings = {
