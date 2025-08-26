@@ -1281,34 +1281,34 @@ function initQuagga() {
                         "upc_e_reader"
                     ],
                     debug: {
-                        drawBoundingBox: true,
-                        showPattern: true,
-                        showFoundPattern: true,
-                        showSkeleton: true,
-                        showLabels: true,
-                        showPatch: true,
-                        showRecalculated: true
+                        drawBoundingBox: false,
+                        showPattern: false,
+                        showFoundPattern: false,
+                        //showSkeleton: true,
+                        //showLabels: true,
+                        //showPatch: true,
+                        //showRecalculated: true
                     }
                 },
                 locator: {
-                    patchSize: "large",
-                    halfSample: false
+                    patchSize: "medium",
+                    halfSample: true
                 },
                 preprocessor: {
-                    // Zvýší kontrast pro lepší čitelnost
-                        contrast: {
-                        min: 32,
-                        max: 220
-                        },
-                        // Zvýší ostrost
-                        sharpen: {
-                        flat: 1.0,
-                        jagged: 2.0
-                        }
+                // Zvýší kontrast pro lepší čitelnost
+                    contrast: {
+                    min: 32,
+                    max: 220
                     },
-                    frequency: 10,
-                    numOfWorkers: 2,
-                    debug: false // Vypnout debug pro lepší výkon
+                    // Zvýší ostrost
+                    sharpen: {
+                    flat: 1.0,
+                    jagged: 2.0
+                    }
+                },
+                frequency: 10,
+                numOfWorkers: 5,
+                debug: false // Vypnout debug pro lepší výkon
                 }, function(err) {
                 if (err) {
                     console.error("Chyba při inicializaci Quagga:", err);
@@ -1397,12 +1397,11 @@ async function openBarcodeScanner() {
     barcodeModal.style.display = 'flex';
     barcodeStatus.textContent = 'Inicializace...';
     barcodeStatus.innerHTML = `
-        <div>Inicializace kamery...</div>
-        <div class="scanning-status">
-            Ujistěte se, že čárový kód je v dobrém osvětlení a je zaostřený
-        </div>
-        <div class="scanning-tip">Pro lepší výsledky přibližte kód ke kameře</div>
-        `;    
+        <div>Skenování spuštěno</div>
+        <div class="scanning-tip">Namiřte na čárový kód ve dobrém osvětlení</div>
+        <div class="scanning-loading">🔍 Skenuji...</div>
+    `;   
+    
     // ZOBRAZÍME TLAČÍTKO "ZASTAVIT"
     document.getElementById('stopScanButton').style.display = 'block';
     
