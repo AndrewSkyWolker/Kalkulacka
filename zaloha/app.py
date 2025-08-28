@@ -91,23 +91,19 @@ def search_food():
     if not query:
         return jsonify({"error": "Prosím, zadejte hledaný výraz."}), 400
 
-    # Přidáme kontrolu přerušení pomocí Flaskového generator contextu
     def generate_results():
         """Generátorová funkce pro postupné odesílání výsledků."""
         try:
             params = {'query': query}
 
             # Krok 1: Vyhledání pomocí autocomplete API
+            # time.sleep(0.5)
             # Přidejte timeout a opakování při chybě:
             max_retries = 3
             retry_delay = 0.5  # sekundy
 
             for attempt in range(max_retries):
                 try:
-                    # Přidáme kontrolu přerušení před každým požadavkem
-                    if request.environ.get('werkzeug.server.shutdown'):
-                        return
-                    
                     autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
                     autocomplete_response.raise_for_status()
                     break
@@ -116,7 +112,8 @@ def search_food():
                         yield json.dumps({"error": f"Chyba při komunikaci s API: {str(e)}"}) + '\n'
                         return
                     time.sleep(retry_delay)
-            
+            autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
+            autocomplete_response.raise_for_status()
             autocomplete_data = autocomplete_response.json()
 
             if not isinstance(autocomplete_data, list):
@@ -125,10 +122,6 @@ def search_food():
 
             # Procházení výsledků z autocomplete API
             for item in autocomplete_data:
-                # Kontrola přerušení před zpracováním každé položky
-                if request.environ.get('werkzeug.server.shutdown'):
-                    return
-                
                 food_name = item.get("title", "Neznámá potravina")
                 food_value = item.get('value', 'N/A')
 
@@ -170,12 +163,8 @@ def search_food():
 
                     for current_image_fetch_url, current_food_type in unique_urls_and_types:
                         try:
-                            # Kontrola přerušení před každým požadavkem na obrázek
-                            if request.environ.get('werkzeug.server.shutdown'):
-                                return
-                                
-                            time.sleep(0.1)  # Mírné zkrácení čekání
-                            detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=5)  # Zkrácený timeout
+                            time.sleep(0.5)
+                            detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=10)
                             detail_response.raise_for_status()
 
                             detail_soup = BeautifulSoup(detail_response.text, 'html.parser')

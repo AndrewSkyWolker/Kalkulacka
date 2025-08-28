@@ -246,8 +246,6 @@
         // Přidejte další časté chyby čtení
         };
 
-        let currentSearchController = null;
-        let isSearchInterrupted = false;
         let app, db, auth, userId;
         let isAuthReady = false;
         let userSettings = {
@@ -1960,14 +1958,6 @@ function closeBarcodeScanner() {
                     errorDiv.innerHTML = '';
                     loadingDiv.style.display = 'block';
 
-                    isSearchInterrupted = false;
-                
-                    // Vytvoříme nový AbortController pro aktuální vyhledávání
-                    if (currentSearchController) {
-                        currentSearchController.abort();
-                    }
-                    currentSearchController = new AbortController();
-
                     try {
                         const response = await fetch('/search', {
                             method: 'POST',
@@ -1975,7 +1965,6 @@ function closeBarcodeScanner() {
                                 'Content-Type': 'application/x-www-form-urlencoded',
                             },
                             body: `query=${encodeURIComponent(query)}`
-                            signal: currentSearchController.signal // Připojíme signal pro možnost přerušení
                         });
 
                         if (!response.ok) {
@@ -1995,13 +1984,6 @@ function closeBarcodeScanner() {
                         let buffer = '';
 
                         while (true) {
-                            // Kontrola přerušení před dalším čtením
-                            if (isSearchInterrupted) {
-                                console.log('Vyhledávání bylo přerušeno uživatelem');
-                                reader.cancel();
-                                break;
-                            }
-                            
                             const { done, value } = await reader.read();
                             if (done) {
                                 break;
@@ -2026,7 +2008,7 @@ function closeBarcodeScanner() {
                                 }
                             }
                         }
-                        if (buffer.trim() !== '' && !isSearchInterrupted) {
+                        if (buffer.trim() !== '') {
                             try {
                                 const item = JSON.parse(buffer);
                                 if (item.error) {
@@ -2040,21 +2022,15 @@ function closeBarcodeScanner() {
                         }
 
                         loadingDiv.style.display = 'none';
-                        if (resultsDiv.innerHTML === '' && !isSearchInterrupted) {
+                        if (resultsDiv.innerHTML === '') {
                             resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
                         }
 
                     } catch (error) {
-                    if (error.name === 'AbortError') {
-                        console.log('Vyhledávání bylo přerušeno uživatelem');
-                    } else {
                         console.error('Došlo k chybě:', error);
                         loadingDiv.style.display = 'none';
-                        if (!isSearchInterrupted) {
-                            errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
-                        }
+                        errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
                     }
-                }
                 });
             } else {
                 console.error('Search form element with ID "searchForm" not found.');
@@ -2074,22 +2050,13 @@ function closeBarcodeScanner() {
                 if (item.food_type === 'potravina') {
                     foodItemDiv.classList.add('food-item-potravina');
                 }
-                
+                // Removed else if for 'recept' as it's filtered out
+
                 if (item.slug) {
                     foodItemDiv.dataset.slug = item.slug;
                     foodItemDiv.dataset.foodType = item.food_type;
-                    // Upravený click listener pro přerušení vyhledávání
-                    foodItemDiv.addEventListener('click', () => {
-                        // Přerušíme aktuální vyhledávání
-                        isSearchInterrupted = true;
-                        if (currentSearchController) {
-                            currentSearchController.abort();
-                        }
-                        // Skryjeme loading indicator
-                        document.getElementById('loading').style.display = 'none';
-                        // Zobrazíme detaily
-                        showDetailsModal(item.slug, item.name, item.image_url, item.calories, item.food_type);
-                    });
+                    // The click listener now only opens the modal
+                    foodItemDiv.addEventListener('click', () => showDetailsModal(item.slug, item.name, item.image_url, item.calories, item.food_type));
                 }
 
                 let imageHtml = '';
