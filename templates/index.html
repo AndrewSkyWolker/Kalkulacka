@@ -1939,9 +1939,9 @@ function closeBarcodeScanner() {
 
         initializeFirebase();        
 
-            // --- Logika vyhledávání potravin ---
-            const searchForm = document.getElementById('searchForm');
-            if (searchForm) {
+        // --- Logika vyhledávání potravin ---
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
                 searchForm.addEventListener('submit', function(event) {
                     console.log('Search form submit event fired.');
                     event.preventDefault();
@@ -2034,7 +2034,7 @@ function closeBarcodeScanner() {
 
             }
 
-            function appendFoodItem(item) {
+        function appendFoodItem(item) {
             // Filter out recipes - only show 'potravina'
             if (item.food_type !== 'potravina') {
                 return;
@@ -2068,7 +2068,8 @@ function closeBarcodeScanner() {
 
             if (item.image_url) {
                 imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
-            } else {
+            }
+            else {
                  imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
             }
 
@@ -2274,7 +2275,7 @@ function closeBarcodeScanner() {
                 });
             }
 
-        }); // End of DOMContentLoaded
+        }; // End of DOMContentLoaded
 
         async function showDetailsModal(slug, name, imageUrl, initialCaloriesString, foodType, isEditingRecipeIngredient = false, initialAmount = 100, initialUnit = 'g', originalNutritionalDetails = null) {
             console.log("showDetailsModal called for slug:", slug, "name:", name, "foodType:", foodType, "isEditingRecipeIngredient:", isEditingRecipeIngredient);
