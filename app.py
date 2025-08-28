@@ -97,8 +97,8 @@ def search_food():
                 params = {'query': query}
 
                 # Krok 1: Vyhledání pomocí autocomplete API
-                max_retries = 2  # Snížíme počet pokusů
-                retry_delay = 0.3  # sekundy
+                max_retries = 2
+                retry_delay = 0.3
 
                 for attempt in range(max_retries):
                     try:
@@ -145,15 +145,41 @@ def search_food():
                     image_url = None
                     food_type = None
 
-                    # Zjednodušíme načítání obrázků - pouze základní URL
+                    # VRÁCENÍ PŮVODNÍ FUNKCIONALITY PRO NAČÍTÁNÍ OBRÁZKŮ
                     if food_has_image and food_url_slug:
-                        # Použijeme přímo URL z API bez dalších kontrol
-                        image_url = f"https://www.kaloricketabulky.cz{food_url_slug}?w=100"
-                        # Určíme typ podle URL
-                        if '/recepty/' in food_url_slug:
-                            food_type = 'recept'
-                        else:
-                            food_type = 'potravina'
+                        potential_image_urls_and_types = []
+
+                        # Priorita: 1. /recepty/, 2. /potraviny/
+                        potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/recepty/' + food_url_slug.lstrip('/')), 'recept'))
+                        potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/potraviny/' + food_url_slug.lstrip('/')), 'potravina'))
+
+                        # Remove duplicates while preserving order
+                        unique_urls_and_types = []
+                        seen_urls = set()
+                        for url, type_val in potential_image_urls_and_types:
+                            if url not in seen_urls:
+                                unique_urls_and_types.append((url, type_val))
+                                seen_urls.add(url)
+
+                        for current_image_fetch_url, current_food_type in unique_urls_and_types:
+                            try:
+                                # RYCHLEJŠÍ načítání - bez čekání
+                                detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=3)
+                                detail_response.raise_for_status()
+
+                                detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
+                                img_tag = detail_soup.find('img', src=lambda src: src and src.startswith('/file/image/'))
+
+                                if img_tag and img_tag.get('src'):
+                                    image_url = f"https://www.kaloricketabulky.cz{img_tag['src']}?w=100"
+                                    food_type = current_food_type
+                                    break # Image found, exit loop
+                            except requests.exceptions.HTTPError as e:
+                                pass # Suppress detailed error for 404s during image search
+                            except requests.exceptions.RequestException as e:
+                                pass
+                            except Exception as e:
+                                pass
 
                     yield json.dumps({
                         "name": food_name,
