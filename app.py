@@ -80,9 +80,7 @@ def index():
 def search_food():
     """
     Zpracovává vyhledávací požadavek z frontendu a streamuje výsledky.
-    Nejprve volá autocomplete API a poté se pokouší scrapovat obrázky z detailních stránek potravin nebo receptů.
     """
-    # Přidejte podporu pro přímé předání názvu bez formuláře
     if request.is_json:
         query = request.json.get('query')
     else:
@@ -91,119 +89,80 @@ def search_food():
     if not query:
         return jsonify({"error": "Prosím, zadejte hledaný výraz."}), 400
 
-    # Přidáme kontrolu přerušení pomocí Flaskového generator contextu
     def generate_results():
         """Generátorová funkce pro postupné odesílání výsledků."""
         try:
-            params = {'query': query}
+            # Vytvoříme nový request context pro streamování
+            with app.test_request_context():
+                params = {'query': query}
 
-            # Krok 1: Vyhledání pomocí autocomplete API
-            # Přidejte timeout a opakování při chybě:
-            max_retries = 3
-            retry_delay = 0.5  # sekundy
+                # Krok 1: Vyhledání pomocí autocomplete API
+                max_retries = 2  # Snížíme počet pokusů
+                retry_delay = 0.3  # sekundy
 
-            for attempt in range(max_retries):
-                try:
-                    # Přidáme kontrolu přerušení před každým požadavkem
-                    if request.environ.get('werkzeug.server.shutdown'):
-                        return
-                    
-                    autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=10)
-                    autocomplete_response.raise_for_status()
-                    break
-                except requests.exceptions.RequestException as e:
-                    if attempt == max_retries - 1:
-                        yield json.dumps({"error": f"Chyba při komunikaci s API: {str(e)}"}) + '\n'
-                        return
-                    time.sleep(retry_delay)
-            
-            autocomplete_data = autocomplete_response.json()
-
-            if not isinstance(autocomplete_data, list):
-                yield json.dumps({"error": "Server vrátil neočekávaný formát autocomplete dat (není seznam)."}) + '\n'
-                return
-
-            # Procházení výsledků z autocomplete API
-            for item in autocomplete_data:
-                # Kontrola přerušení před zpracováním každé položky
-                if request.environ.get('werkzeug.server.shutdown'):
-                    return
-                
-                food_name = item.get("title", "Neznámá potravina")
-                food_value = item.get('value', 'N/A')
-
-                is_liquid = False
-                liquid_keywords = ['mléko', 'kefír', 'jogurtový nápoj', 'džus', 'šťáva', 'voda', 'nápoj', 'limonáda', 'sirup', 'polévka', 'vývar']
-                for keyword in liquid_keywords:
-                    if keyword in food_name.lower():
-                        is_liquid = True
+                for attempt in range(max_retries):
+                    try:
+                        autocomplete_response = requests.get(SEARCH_API_URL, headers=DEFAULT_HEADERS, params=params, timeout=8)
+                        autocomplete_response.raise_for_status()
                         break
+                    except requests.exceptions.RequestException as e:
+                        if attempt == max_retries - 1:
+                            yield json.dumps({"error": f"Chyba při komunikaci s API: {str(e)}"}) + '\n'
+                            return
+                        time.sleep(retry_delay)
+                
+                try:
+                    autocomplete_data = autocomplete_response.json()
+                except ValueError:
+                    yield json.dumps({"error": "Chyba při parsování odpovědi z API."}) + '\n'
+                    return
 
-                energy_unit_suffix = "kcal"
-                if is_liquid:
-                    energy_unit_suffix = "kcal/100 ml"
-                else:
+                if not isinstance(autocomplete_data, list):
+                    yield json.dumps({"error": "Server vrátil neočekávaný formát autocomplete dat (není seznam)."}) + '\n'
+                    return
+
+                # Procházení výsledků z autocomplete API
+                for item in autocomplete_data:
+                    food_name = item.get("title", "Neznámá potravina")
+                    food_value = item.get('value', 'N/A')
+
+                    is_liquid = False
+                    liquid_keywords = ['mléko', 'kefír', 'jogurtový nápoj', 'džus', 'šťáva', 'voda', 'nápoj', 'limonáda', 'sirup', 'polévka', 'vývar']
+                    for keyword in liquid_keywords:
+                        if keyword in food_name.lower():
+                            is_liquid = True
+                            break
+
                     energy_unit_suffix = "kcal/100 g"
+                    if is_liquid:
+                        energy_unit_suffix = "kcal/100 ml"
 
-                food_calories = f"{food_value} {energy_unit_suffix}"
+                    food_calories = f"{food_value} {energy_unit_suffix}"
 
-                food_has_image = item.get('hasImage', False)
-                food_url_slug = item.get('url') # This already contains /potraviny/ or /recepty/
+                    food_has_image = item.get('hasImage', False)
+                    food_url_slug = item.get('url')
+                    
+                    image_url = None
+                    food_type = None
 
-                image_url = None
-                food_type = None # Initialize food_type
+                    # Zjednodušíme načítání obrázků - pouze základní URL
+                    if food_has_image and food_url_slug:
+                        # Použijeme přímo URL z API bez dalších kontrol
+                        image_url = f"https://www.kaloricketabulky.cz{food_url_slug}?w=100"
+                        # Určíme typ podle URL
+                        if '/recepty/' in food_url_slug:
+                            food_type = 'recept'
+                        else:
+                            food_type = 'potravina'
 
-                if food_has_image and food_url_slug:
-                    potential_image_urls_and_types = []
+                    yield json.dumps({
+                        "name": food_name,
+                        "calories": food_calories,
+                        "image_url": image_url,
+                        "slug": food_url_slug,
+                        "food_type": food_type
+                    }) + '\n'
 
-                    # Priorita: 1. /recepty/, 2. /potraviny/
-                    potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/recepty/' + food_url_slug.lstrip('/')), 'recept'))
-                    potential_image_urls_and_types.append((urljoin(BASE_WEB_URL, '/potraviny/' + food_url_slug.lstrip('/')), 'potravina'))
-
-                    # Remove duplicates while preserving order
-                    unique_urls_and_types = []
-                    seen_urls = set()
-                    for url, type_val in potential_image_urls_and_types:
-                        if url not in seen_urls:
-                            unique_urls_and_types.append((url, type_val))
-                            seen_urls.add(url)
-
-                    for current_image_fetch_url, current_food_type in unique_urls_and_types:
-                        try:
-                            # Kontrola přerušení před každým požadavkem na obrázek
-                            if request.environ.get('werkzeug.server.shutdown'):
-                                return
-                                
-                            time.sleep(0.1)  # Mírné zkrácení čekání
-                            detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=5)  # Zkrácený timeout
-                            detail_response.raise_for_status()
-
-                            detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                            img_tag = detail_soup.find('img', src=lambda src: src and src.startswith('/file/image/'))
-
-                            if img_tag and img_tag.get('src'):
-                                image_url = f"https://www.kaloricketabulky.cz{img_tag['src']}?w=100"
-                                food_type = current_food_type # Set food_type based on successful URL
-                                break # Image found, exit loop
-                        except requests.exceptions.HTTPError as e:
-                            pass # Suppress detailed error for 404s during image search
-                        except requests.exceptions.RequestException as e:
-                            pass
-                        except Exception as e:
-                            pass
-
-                yield json.dumps({
-                    "name": food_name,
-                    "calories": food_calories,
-                    "image_url": image_url,
-                    "slug": food_url_slug, # Still send the original slug for get_details
-                    "food_type": food_type # Send the determined food_type
-                }) + '\n'
-
-        except requests.exceptions.RequestException as e:
-            yield json.dumps({"error": f"Chyba při komunikaci s autocomplete API: {e}"}) + '\n'
-        except ValueError as e:
-            yield json.dumps({"error": f"Chyba při parsování JSON odpovědi z autocomplete API: {e}"}) + '\n'
         except Exception as e:
             yield json.dumps({"error": f"Nastala neočekávaná chyba: {e}"}) + '\n'
 

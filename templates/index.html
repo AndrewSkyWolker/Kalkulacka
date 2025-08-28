@@ -1226,7 +1226,7 @@ function initBarcodeScanner() {
     document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
     
     // Inicializace QuaggaJS
-    initQuagga();
+    //initQuagga();
 }
 
 // Inicializace QuaggaJS
@@ -1279,19 +1279,12 @@ function initQuagga() {
                 numOfWorkers: 2,
                 debug: false // Vypnout debug pro lepší výkon
                 }, function(err) {
-                if (err) {
-                    console.error("Chyba při inicializaci Quagga:", err);
-                    barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
-                    barcodeStatus.style.color = 'red';
-                    // POKUS O OBNOVU PO CHYBĚ
-                    setTimeout(() => {
-                        if (barcodeModal.style.display === 'flex') {
-                            console.log('Zkouším znovu inicializovat Quaggu...');
-                            initQuagga();
-                        }
-                    }, 1000);
-                    return;
-                }
+                    if (err) {
+                        console.error("Chyba při inicializaci Quagga:", err);
+                        barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
+                        barcodeStatus.style.color = 'red';
+                        return;
+                    }
                 
                 quaggaInitialized = true;
                 console.log("Quagga inicializována");
@@ -1397,6 +1390,11 @@ async function openBarcodeScanner() {
   `;
 }
     
+    // Inicializujeme Quaggu až při otevření modálního okna
+    if (!quaggaInitialized) {
+        initQuagga();
+    }
+
     // Zkontrolujeme, zda je API dostupné
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
@@ -1939,10 +1937,7 @@ function closeBarcodeScanner() {
     console.log('Skener úspěšně uzavřen');
 }
 
-        initializeFirebase();
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-            console.log('DOMContentLoaded fired.');
+        initializeFirebase();        
 
             // --- Logika vyhledávání potravin ---
             const searchForm = document.getElementById('searchForm');
@@ -1959,9 +1954,7 @@ function closeBarcodeScanner() {
                     resultsDiv.innerHTML = '';
                     errorDiv.innerHTML = '';
                     loadingDiv.style.display = 'block';
-                
-                    // Resetujeme stav přerušení
-                    isSearchInterrupted = false;
+
                 
                     // Zrušíme předchozí vyhledávání, pokud existuje
                     if (currentSearchXHR) {
@@ -1974,100 +1967,94 @@ function closeBarcodeScanner() {
                     currentSearchXHR.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 
                     let buffer = '';
+                    let hasResults = false;
                 
-                    currentSearchXHR.onprogress = function() {
-                        if (isSearchInterrupted) {
-                            currentSearchXHR.abort();
-                            return;
-                        }
-                    
-                        const newData = currentSearchXHR.responseText.substring(buffer.length);
-                        buffer += newData;
-                    
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop();
-                    
-                        for (const line of lines) {
-                            if (line.trim() === '') continue;
-                            try {
-                                const item = JSON.parse(line);
-                                if (item.error) {
-                                    errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                                    loadingDiv.style.display = 'none';
-                                    currentSearchXHR.abort();
-                                    return;
-                                }
-                                appendFoodItem(item);
-                            } catch (e) {
-                                console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
-                            }
-                        }
-                    };
-                
-                    currentSearchXHR.onload = function() {
-                        if (isSearchInterrupted) return;
-                    
-                        if (currentSearchXHR.status >= 200 && currentSearchXHR.status < 300) {
-                            if (buffer.trim() !== '') {
+                    currentSearchXHR.onreadystatechange = function() {
+                        if (currentSearchXHR.readyState === 3 && currentSearchXHR.status === 200) {
+                            // Průběžné zpracování dat
+                            const newData = currentSearchXHR.responseText.substring(buffer.length);
+                            buffer += newData;
+                        
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop();
+                        
+                            for (const line of lines) {
+                                if (line.trim() === '') continue;
                                 try {
-                                    const item = JSON.parse(buffer);
+                                    const item = JSON.parse(line);
                                     if (item.error) {
                                         errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                                    } else {
-                                        appendFoodItem(item);
+                                        loadingDiv.style.display = 'none';
+                                        currentSearchXHR.abort();
+                                        return;
                                     }
+                                    appendFoodItem(item);
+                                    hasResults = true;
                                 } catch (e) {
-                                    console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
+                                    console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
                                 }
                             }
+                        }
+                        else if (currentSearchXHR.readyState === 4) {
+                            // Po dokončení požadavku
+                            loadingDiv.style.display = 'none';
                         
-                            loadingDiv.style.display = 'none';
-                            if (resultsDiv.innerHTML === '') {
-                                resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
+                            if (currentSearchXHR.status === 200) {
+                                // Zpracování zbylých dat
+                                if (buffer.trim() !== '') {
+                                    try {
+                                        const item = JSON.parse(buffer);
+                                        if (item.error) {
+                                            errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                                        } else {
+                                            appendFoodItem(item);
+                                            hasResults = true;
+                                        }
+                                    } catch (e) {
+                                        console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
+                                    }
+                                }
+                            
+                                if (!hasResults) {
+                                    resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
+                                }
+                            } else {
+                                errorDiv.textContent = `Chyba: ${currentSearchXHR.statusText || 'Neznámá chyba'}`;
                             }
-                        } else {
-                            loadingDiv.style.display = 'none';
-                            errorDiv.textContent = `Chyba: ${currentSearchXHR.statusText}`;
                         }
                     };
                 
                     currentSearchXHR.onerror = function() {
-                        if (!isSearchInterrupted) {
-                            loadingDiv.style.display = 'none';
-                            errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
-                        }
+                        loadingDiv.style.display = 'none';
+                        errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
                     };
                 
                     currentSearchXHR.send(`query=${encodeURIComponent(query)}`);
                 });
-            } else {
-                console.error('Search form element with ID "searchForm" not found.');
+
             }
 
             function appendFoodItem(item) {
-                // Filter out recipes - only show 'potravina'
-                if (item.food_type !== 'potravina') {
-                    return;
-                }
+            // Filter out recipes - only show 'potravina'
+            if (item.food_type !== 'potravina') {
+                return;
+            }
 
-                const resultsDiv = document.getElementById('results');
-                const foodItemDiv = document.createElement('div');
-                foodItemDiv.classList.add('food-item');
+            const resultsDiv = document.getElementById('results');
+            const foodItemDiv = document.createElement('div');
+            foodItemDiv.classList.add('food-item', 'food-item-potravina');
 
-                // Keep class for styling if needed, even if only 'potravina' is shown
-                if (item.food_type === 'potravina') {
-                    foodItemDiv.classList.add('food-item-potravina');
-                }
+            if (item.slug) {
+                foodItemDiv.dataset.slug = item.slug;
+                foodItemDiv.dataset.foodType = item.food_type;
                 
-                if (item.slug) {
-                    foodItemDiv.dataset.slug = item.slug;
-                    foodItemDiv.dataset.foodType = item.food_type;
-                    // Upravený click listener pro přerušení vyhledávání
+                // Upravený click listener pro přerušení vyhledávání
                 foodItemDiv.addEventListener('click', () => {
                     // Přerušíme aktuální vyhledávání
-                    isSearchInterrupted = true;
+
                     if (currentSearchXHR) {
                         currentSearchXHR.abort();
+                        currentSearchXHR = null;
                     }
                     // Skryjeme loading indicator
                     document.getElementById('loading').style.display = 'none';
@@ -2076,36 +2063,32 @@ function closeBarcodeScanner() {
                 });
             }
 
-                let imageHtml = '';
-                // Updated placeholder image path
-                const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}";
+            let imageHtml = '';
+            const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}";
 
-                if (item.image_url) {
-                    imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
-                } else {
-                    imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
-                }
-
-                // Parse and reformat item.calories to ensure 1 decimal place
-                const { number: caloriesNum, unit: caloriesUnit } = parseValueAndUnit(item.calories);
-                const formattedCalories = formatNumberForDisplay(caloriesNum, caloriesUnit, true); // Pass true for isEnergyValue
-                
-                // Změněná struktura pro umístění kalorií pod obrázek a labelu vedle názvu
-                let itemContent = `
-                    <div class="image-wrapper">
-                        ${imageHtml}
-                    </div>
-                    <div class="food-details">
-                        <h3>${item.name}</h3>
-                        <div class="calories-and-type-row">
-                            <p class="calories-display">Kalorie: ${formattedCalories}</p>
-                            <!-- Removed foodTypeLabelHtml -->
-                        </div>
-                    </div>
-                `;
-                foodItemDiv.innerHTML = itemContent;
-                resultsDiv.appendChild(foodItemDiv);
+            if (item.image_url) {
+                imageHtml = `<img src="${item.image_url}" alt="${item.name}" onerror="this.onerror=null;this.src='${placeholderImage}'" />`;
+            } else {
+                 imageHtml = `<img src="${placeholderImage}" alt="Bez obrázku" />`;
             }
+
+            const { number: caloriesNum, unit: caloriesUnit } = parseValueAndUnit(item.calories);
+            const formattedCalories = formatNumberForDisplay(caloriesNum, caloriesUnit, true);
+
+            let itemContent = `
+                <div class="image-wrapper">
+                    ${imageHtml}
+                </div>
+                <div class="food-details">
+                    <h3>${item.name}</h3>
+                    <div class="calories-and-type-row">
+                        <p class="calories-display">Kalorie: ${formattedCalories}</p>
+                    </div>
+                </div>
+            `;
+            foodItemDiv.innerHTML = itemContent;
+            resultsDiv.appendChild(foodItemDiv);
+            
 
             // --- Logika modálního okna pro detaily potravin ---
             const detailsModal = document.getElementById('detailsModal');
