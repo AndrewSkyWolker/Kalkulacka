@@ -120,8 +120,29 @@ def search_food():
                 yield json.dumps({"error": "Server vrátil neočekávaný formát autocomplete dat (není seznam)."}) + '\n'
                 return
 
-            # Procházení výsledků z autocomplete API
+            # Přidáme filtr pro odstranění duplicitních výsledků
+            seen_names = set()
+            unique_results = []
+            
             for item in autocomplete_data:
+                food_name = item.get("title", "Neznámá potravina").strip()
+                
+                # Přeskočíme prázdné názvy
+                if not food_name:
+                    continue
+                
+                # Normalizujeme název pro lepší porovnávání
+                normalized_name = food_name.lower()
+                
+                # Přeskočíme duplicitní výsledky
+                if normalized_name in seen_names:
+                    continue
+                
+                seen_names.add(normalized_name)
+                unique_results.append(item)
+
+            # Procházení UNIKÁTNÍCH výsledků z autocomplete API
+            for item in unique_results:
                 food_name = item.get("title", "Neznámá potravina")
                 food_value = item.get('value', 'N/A')
 
@@ -137,6 +158,7 @@ def search_food():
                     energy_unit_suffix = "kcal/100 ml"
                 else:
                     energy_unit_suffix = "kcal/100 g"
+                    
 
                 food_calories = f"{food_value} {energy_unit_suffix}"
 
@@ -163,8 +185,8 @@ def search_food():
 
                     for current_image_fetch_url, current_food_type in unique_urls_and_types:
                         try:
-                            time.sleep(0.5)
-                            detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=10)
+                            time.sleep(0.1)  # Krátké čekání mezi požadavky
+                            detail_response = requests.get(current_image_fetch_url, headers=DEFAULT_HEADERS, timeout=5)
                             detail_response.raise_for_status()
 
                             detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
