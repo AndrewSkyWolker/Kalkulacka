@@ -1937,11 +1937,87 @@ function closeBarcodeScanner() {
     
     console.log('Skener úspěšně uzavřen');
 }
+    const detailsModal = document.getElementById('detailsModal');
+    const closeButton = detailsModal.querySelector('.close-button');
 
-        initializeFirebase();        
+// Inicializace modálních oken a jejich event listenerů
+document.addEventListener('DOMContentLoaded', function() {
+    // Kontrola existence elementů před přidáním event listenerů
+    if (!detailsModal) {
+        console.error("Details modal element not found");
+        return;
+    }
 
-        // --- Logika vyhledávání potravin ---
-        const searchForm = document.getElementById('searchForm');
+    // Reference na modální okna a jejich ovládací prvky
+    const closeButton = detailsModal ? detailsModal.querySelector('.close-button') : null;  
+    const createRecipeModal = document.getElementById('createRecipeModal');
+    const selectRecipeModal = document.getElementById('selectRecipeModal');
+    const settingsModal = document.getElementById('settingsModal');
+    const barcodeModal = document.getElementById('barcodeModal');
+    
+    // Event listener pro zavírací tlačítko detailního modalu
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            detailsModal.style.display = 'none';
+            currentEditingRecipeId = null;
+            currentEditingIngredientIndex = null;
+        });
+    }
+
+    // Event listener pro zavírání kliknutím mimo modální okno
+    window.addEventListener('click', (event) => {
+        if (event.target == detailsModal) {
+            detailsModal.style.display = 'none';
+            currentEditingRecipeId = null;
+            currentEditingIngredientIndex = null;
+        }
+        if (event.target == settingsModal) {
+            settingsModal.style.display = 'none';
+        }
+        if (event.target == selectRecipeModal) {
+            selectRecipeModal.style.display = 'none';
+        }
+        if (event.target == barcodeModal) {
+            closeBarcodeScanner();
+        }
+    });
+
+    // Event listener pro nastavovací ikonku
+    const settingsIcon = document.getElementById('settingsIcon');
+    if (settingsIcon) {
+        settingsIcon.addEventListener('click', () => {
+            settingsModal.style.display = 'flex';
+        });
+    }
+
+    // Event listener pro tlačítko zavření nastavení
+    const closeSettingsModalButton = document.getElementById('closeSettingsModal');
+    if (closeSettingsModalButton) {
+        closeSettingsModalButton.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+    }
+
+    // Event listener pro tlačítko zavření výběru receptu
+    const closeSelectRecipeModal = document.getElementById('closeSelectRecipeModal');
+    if (closeSelectRecipeModal) {
+        closeSelectRecipeModal.addEventListener('click', () => {
+            selectRecipeModal.style.display = 'none';
+        });
+    }
+
+    // Event listener pro tlačítko zavření vytváření receptu
+    document.getElementById('closeCreateRecipeModal').addEventListener('click', () => {
+        createRecipeModal.style.display = 'none';
+    });
+
+    console.log("Modální okna inicializována");
+});
+
+initializeFirebase();        
+
+// --- Logika vyhledávání potravin ---
+const searchForm = document.getElementById('searchForm');
 if (searchForm) {
     searchForm.addEventListener('submit', async function(event) {
         console.log('Search form submit event fired.');
@@ -2124,8 +2200,7 @@ if (searchForm) {
             
 
             // --- Logika modálního okna pro detaily potravin ---
-            const detailsModal = document.getElementById('detailsModal');
-            const closeButton = detailsModal.querySelector('.close-button');
+            
             const modalDetailsContent = document.getElementById('modalDetailsContent');
 
             // References to new modals
