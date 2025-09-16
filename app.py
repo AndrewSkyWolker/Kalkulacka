@@ -2,6 +2,7 @@
 import os
 import requests
 from flask import Flask, render_template, request, jsonify, Response
+from flask import send_from_directory
 from dotenv import load_dotenv
 import json
 import re
@@ -67,6 +68,10 @@ except Exception as e:
     print(f"Neočekávaná chyba při zpracování Firebase konfigurace: {e}")
     firebase_config_json_for_frontend = '{}'
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/')
 def index():
