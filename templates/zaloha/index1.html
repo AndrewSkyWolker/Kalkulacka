@@ -10,13 +10,6 @@
 </head>
 <body data-app-id="{{ app_id }}" data-firebase-config="{{ firebase_config_json }}">
     <div class="container">
-        <!-- Indikátor načítání -->
-        <div id="globalLoading" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
-            <div style="text-align: center;">
-                <div style="margin-bottom: 10px;">Načítání aplikace...</div>
-                <div class="loading-spinner"></div>
-            </div>
-        </div>
         <!-- Nový wrapper pro statické záhlaví -->
         <div class="sticky-header-wrapper">
             <div id="userIdDisplay"></div> <!-- Přesunuto sem -->
@@ -47,48 +40,6 @@
 
         <div id="results">
             <!-- Zde se budou zobrazovat výsledky -->
-        </div>
-    </div>
-
-    <!-- Přihlašovací modální okno -->
-    <div id="loginModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Přihlášení</h3>
-            <div id="loginError" class="error" style="display: none;"></div>
-        
-            <input type="email" id="loginEmail" placeholder="E-mail" required>
-            <input type="password" id="loginPassword" placeholder="Heslo" required>
-        
-            <div class="modal-action-buttons">
-                <button id="loginBtn">Přihlásit se</button>
-                <button id="registerBtn">Registrovat</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Nové modální okno pro výběr profilu -->
-    <div id="profileModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Výběr profilu</h3>
-            <div id="profileList">
-                <!-- Seznam profilů se načte zde -->
-            </div>
-            <div class="modal-action-buttons">
-                <button id="createNewProfileBtn">Vytvořit nový profil</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modální okno pro vytvoření nového profilu -->
-    <div id="createProfileModal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-button" id="closeCreateProfileModal">&times;</span>
-            <h3>Vytvořit nový profil</h3>
-            <input type="text" id="newProfileName" placeholder="Jméno profilu">
-            <div class="modal-action-buttons">
-                <button id="confirmCreateProfile">Vytvořit</button>
-                <button id="cancelCreateProfile">Zrušit</button>
-            </div>
         </div>
     </div>
 
@@ -264,36 +215,14 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import {
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            onAuthStateChanged,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            setDoc, 
-            updateDoc, 
-            addDoc, 
-            collection, 
-            query, 
-            where, 
-            getDocs, 
-            deleteDoc, 
-            serverTimestamp, 
-            orderBy 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, where, getDocs, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables for Firebase (provided by Canvas environment)
         const bodyElement = document.body;
         const appId = bodyElement.dataset.appId;
         const firebaseConfigString = bodyElement.dataset.firebaseConfig;
-        
+
         console.log("DEBUG JS: Raw appId from data attribute:", appId);
         console.log("DEBUG JS: Raw firebaseConfigString from data attribute:", firebaseConfigString);
 
@@ -339,438 +268,6 @@
         let currentEditingRecipeId = null; // Store the ID of the recipe being edited
         let currentEditingIngredientIndex = null; // Store the index of the ingredient being edited
         const placeholderImage = "{{ url_for('static', filename='icon/potraviny.png') }}"; // Add this line
-
-        // Globální proměnné pro správu profilů
-        let currentProfileId = null;
-        let userProfiles = [];
-        let isAppInitialized = false;
-        let isCreatingProfile = false;
-
-        function checkInitialization() {
-            if (!isAppInitialized || !db || !userId || !currentProfileId) {
-                showCustomNotification("Prosím, počkejte, než se aplikace plně inicializuje.", 'info');
-                return false;
-            }
-            return true;
-        }
-
-        function showGlobalLoading() {
-            document.getElementById('globalLoading').style.display = 'block';
-        }
-
-        function hideGlobalLoading() {
-            document.getElementById('globalLoading').style.display = 'none';
-        }
-
-        // Uložení přihlašovacích údajů do localStorage
-        function saveLoginSession(user) {
-            localStorage.setItem('userData', JSON.stringify({
-                uid: user.uid,
-                email: user.email,
-                lastLogin: new Date().toISOString()
-            }));
-        }
-
-        // Kontrola existující relace
-        function checkExistingSession() {
-            const userData = localStorage.getItem('userData');
-            if (userData) {
-                return JSON.parse(userData);
-            }
-            return null;
-        }
-
-        // Funkce pro registraci
-        async function registerUser(email, password) {
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                console.log("Uživatel zaregistrován:", userCredential.user.uid);
-                return userCredential.user;
-            } catch (error) {
-                console.error("Chyba registrace:", error);
-                throw error;
-            }
-        }
-
-        // Funkce pro přihlášení
-        async function loginUser(email, password) {
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                console.log("Uživatel přihlášen:", userCredential.user.uid);
-                return userCredential.user;
-            } catch (error) {
-                console.error("Chyba přihlášení:", error);
-                throw error;
-            }
-        }
-
-        // Funkce pro odhlášení
-        async function logoutUser() {
-            try {
-                await signOut(auth);
-                console.log("Uživatel odhlášen");
-            } catch (error) {
-                console.error("Chyba odhlášení:", error);
-            }
-        }
-
-        // Funkce pro zobrazení modálního okna pro vytvoření nového profilu
-        function showCreateProfileModal() {
-            const createProfileModal = document.getElementById('createProfileModal');
-
-            // Zkontrolujte, zda modální okno již je zobrazeno
-            if (createProfileModal.style.display === 'flex') {
-                console.log("Create profile modal already shown");
-                return;
-            }
-
-            const newProfileNameInput = document.getElementById('newProfileName');
-    
-            // Resetovat vstupní pole
-            newProfileNameInput.value = '';
-    
-            // Zobrazit modální okno
-            createProfileModal.style.display = 'flex';
-    
-            // Focus na vstupní pole
-            setTimeout(() => {
-                newProfileNameInput.focus();
-            }, 100);
-        }
-
-        // Funkce pro zobrazení modálního okna s profily
-        async function showProfileModal() {
-            const profileModal = document.getElementById('profileModal');
-            const profileList = document.getElementById('profileList');
-    
-            // Načtení existujících profilů
-            await loadUserProfiles();
-    
-            if (userProfiles.length === 0) {
-                // Pokud neexistují žádné profily, přeskočte na vytvoření nového
-                showCreateProfileModal();
-                return;
-            }
-    
-            // Vytvoření seznamu profilů
-            profileList.innerHTML = '';
-            userProfiles.forEach(profile => {
-                const profileItem = document.createElement('div');
-                profileItem.classList.add('profile-item');
-                profileItem.innerHTML = `
-                    <span class="profile-name">${profile.name}</span>
-                    <span class="profile-delete" data-profile-id="${profile.id}">🗑️</span>
-                `;
-        
-                profileItem.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('profile-delete')) {
-                        selectProfile(profile.id);
-                    }
-                });
-        
-                const deleteBtn = profileItem.querySelector('.profile-delete');
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteProfile(profile.id);
-                });
-        
-                profileList.appendChild(profileItem);
-            });
-    
-            profileModal.style.display = 'flex';
-        }
-
-        // Funkce pro načtení profilů uživatele
-        async function loadUserProfiles() {
-            if (!db || !userId) {
-                console.warn("Firestore not available to load profiles.");
-                return;
-            }
-            try {
-                const profilesRef = collection(db, `artifacts/${appId}/profiles`);
-                const q = query(profilesRef, orderBy("createdAt", "asc"));
-                const querySnapshot = await getDocs(q);
-        
-                userProfiles = [];
-                querySnapshot.forEach((doc) => {
-                    userProfiles.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                console.log(`Loaded ${userProfiles.length} profiles`);
-            } catch (error) {
-                console.error("Chyba při načítání profilů:", error);
-            }
-        }
-
-        // Funkce pro výběr profilu
-        async function selectProfile(profileId) {
-            currentProfileId = profileId;
-    
-            // Uložení výběru do localStorage
-            localStorage.setItem(`userProfile_${userId}`, profileId);
-    
-            // Skrytí modálního okna
-            document.getElementById('profileModal').style.display = 'none';
-    
-            // Načtení dat vybraného profilu
-            await loadProfileData();
-    
-            // Povolení funkcí aplikace
-            document.getElementById('recipesButton').disabled = false;
-        }
-
-        // Funkce pro vytvoření nového profilu
-        async function createNewProfile(profileName) {
-            console.log("createNewProfile called with:", profileName, "isCreatingProfile:", isCreatingProfile);
-            // Ochrana proti dvojitému volání
-            if (isCreatingProfile) {
-                console.log("⚠️ Profile creation already in progress - skipping");
-                return null;
-            }
-    
-            isCreatingProfile = true; // Zamknutí funkce
-
-            if (!db) {
-                isCreatingProfile = false;
-                return null;
-            }
-    
-            try {
-                console.log("✅ Starting profile creation for:", profileName);
-                // Nejprve zkontrolujte, zda profil se stejným názvem již existuje
-                const profilesRef = collection(db, `artifacts/${appId}/profiles`);
-
-                // Kontrola existence profilu se stejným názvem
-                const q = query(profilesRef, where("name", "==", profileName));
-                const querySnapshot = await getDocs(q);
-        
-                if (!querySnapshot.empty) {
-                    // Profil s tímto názvem již existuje
-                    showCustomNotification(`Profil "${profileName}" již existuje.`, 'info');
-                    return null;
-                }
-        
-                // Vytvořte nový profil pouze pokud neexistuje
-                const newProfileRef = await addDoc(profilesRef, {
-                    name: profileName,
-                    createdBy: userId,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-        
-                // Vytvoření výchozích nastavení pro profil
-                const settingsRef = doc(db, `artifacts/${appId}/profiles/${newProfileRef.id}/settings`);
-                await setDoc(settingsRef, userSettings);
-                console.log("Nový profil byl vytvořen pod ID:", newProfileRef.id);
-                return newProfileRef.id;
-            } catch (error) {
-                console.error("Chyba při vytváření profilu:", error);
-                return null;
-            }finally {
-                isCreatingProfile = false; // Odemknutí funkce
-                console.log("🔓 Profile creation unlocked");
-            }
-        }
-
-        // Funkce pro smazání profilu
-        async function deleteProfile(profileId) {
-            if (!confirm("Opravdu chcete smazat tento profil? Všechna data budou nenávratně ztracena.")) {
-                return;
-            }
-    
-            try {
-                // Smazání všech dat profilu
-                const profileRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}`);
-                await deleteDoc(profileRef);
-        
-                // Načtení aktualizovaného seznamu profilů
-                await loadUserProfiles();
-        
-                // Pokud byl smazán aktuální profil, vyberte jiný nebo vytvořte nový
-                if (currentProfileId === profileId) {
-                    currentProfileId = null;
-                    localStorage.removeItem(`userProfile_${userId}`);
-            
-                    if (userProfiles.length > 0) {
-                        selectProfile(userProfiles[0].id);
-                    } else {
-                        showCreateProfileModal();
-                    }
-                }
-        
-                // Obnovení zobrazení profilů
-                showProfileModal();
-            } catch (error) {
-                console.error("Chyba při mazání profilu:", error);
-            }
-        }
-
-        // Funkce pro načtení dat profilu
-        async function loadProfileData() {
-            if (!currentProfileId) return;
-    
-            // Načtení nastavení profilu
-            await loadUserSettings();
-    
-            // Načtení receptů profilu
-            await loadUserRecipes();
-        }
-
-        // Funkce pro aktualizaci UI podle nastavení
-        function updateSettingsUI() {
-            // Aktualizace přepínačů v nastavení
-            const confirmRecipeCreationToggle = document.getElementById('confirmRecipeCreationToggle');
-            const confirmFoodAdditionToggle = document.getElementById('confirmFoodAdditionToggle');
-            const confirmDeleteRecipeToggle = document.getElementById('confirmDeleteRecipeToggle');
-            const confirmDeleteRecipeItemToggle = document.getElementById('confirmDeleteRecipeItemToggle');
-            const confirmSaveChangesToggle = document.getElementById('confirmSaveChangesToggle');
-            const confirmRecipeSaveSuccessToggle = document.getElementById('confirmRecipeSaveSuccessToggle');
-            const confirmRecipeDeletionSuccessToggle = document.getElementById('confirmRecipeDeletionSuccessToggle');
-            const confirmRecipeDeletionErrorToggle = document.getElementById('confirmRecipeDeletionErrorToggle');
-
-            if (confirmRecipeCreationToggle) confirmRecipeCreationToggle.checked = userSettings.confirmRecipeCreation;
-            if (confirmFoodAdditionToggle) confirmFoodAdditionToggle.checked = userSettings.confirmFoodAddition;
-            if (confirmDeleteRecipeToggle) confirmDeleteRecipeToggle.checked = userSettings.confirmDeleteRecipe;
-            if (confirmDeleteRecipeItemToggle) confirmDeleteRecipeItemToggle.checked = userSettings.confirmDeleteRecipeItem;
-            if (confirmSaveChangesToggle) confirmSaveChangesToggle.checked = userSettings.confirmSaveChanges;
-            if (confirmRecipeSaveSuccessToggle) confirmRecipeSaveSuccessToggle.checked = userSettings.confirmRecipeSaveSuccess;
-            if (confirmRecipeDeletionSuccessToggle) confirmRecipeDeletionSuccessToggle.checked = userSettings.confirmRecipeDeletionSuccess;
-            if (confirmRecipeDeletionErrorToggle) confirmRecipeDeletionErrorToggle.checked = userSettings.confirmRecipeDeletionError;
-        }
-
-        // Funkce pro bezpečné přidání event listeneru
-        function addEventListenerOnce(elementId, eventType, callback) {
-            const element = document.getElementById(elementId);
-            if (!element) return;
-    
-            // Odstranění existujících listenerů
-            element.removeEventListener(eventType, callback);
-    
-            // Přidání nového listeneru
-            element.addEventListener(eventType, callback);
-        }
-
-        // Použití:
-        addEventListenerOnce('confirmCreateProfile', 'click', async () => {
-            const profileName = document.getElementById('newProfileName').value.trim();
-            if (profileName) {
-                const newProfileId = await createNewProfile(profileName);
-                if (newProfileId) {
-                    await selectProfile(newProfileId);
-                    document.getElementById('createProfileModal').style.display = 'none';
-                }
-            }
-        });
-
-        
-        async function loadUserSettings() {
-            
-            if (!db || !userId || !currentProfileId) {
-                console.error("Firestore, User ID or Profile ID not initialized.");
-                return;
-            }
-    
-            try {
-                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings`);
-                const settingsSnap = await getDoc(settingsDocRef);
-        
-                if (settingsSnap.exists()) {
-                    userSettings = settingsSnap.data();
-                    updateSettingsUI();
-                }else {
-                    // Vytvořit výchozí nastavení, pokud neexistuje
-                    await setDoc(settingsDocRef, userSettings);
-                }
-            } catch (error) {
-                console.error("Chyba při načítání nastavení:", error);
-            }
-        }
-
-        // Debounce funkce pro omezení četnosti volání
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Aplikujte debounce na event listener
-        const debouncedCreateProfile = debounce(async () => {
-            const profileName = document.getElementById('newProfileName').value.trim();
-            if (profileName) {
-                const newProfileId = await createNewProfile(profileName);
-                if (newProfileId) {
-                    await selectProfile(newProfileId);
-                    document.getElementById('createProfileModal').style.display = 'none';
-                }
-            }
-        }, 1000); // 1 sekunda debounce
-
-        // Event listenery pro správu profilů
-        document.getElementById('createNewProfileBtn').addEventListener('click', () => {
-            document.getElementById('profileModal').style.display = 'none';
-            showCreateProfileModal();
-        });
-
-        document.getElementById('confirmCreateProfile').addEventListener('click', async () => {
-            const profileName = document.getElementById('newProfileName').value.trim();
-    
-            if (!profileName) {
-                showCustomNotification("Prosím, zadejte název profilu.", 'info');
-                return;
-            }
-    
-            // Disable tlačítka během vytváření
-            const createButton = document.getElementById('confirmCreateProfile');
-            const originalText = createButton.textContent;
-            createButton.disabled = true;
-            createButton.textContent = "Vytváření...";
-    
-            try {
-                const newProfileId = await createNewProfile(profileName);
-                if (newProfileId) {
-                    await selectProfile(newProfileId);
-                    document.getElementById('createProfileModal').style.display = 'none';
-                }
-            } catch (error) {
-                console.error("Error creating profile:", error);
-            } finally {
-                // Re-enable tlačítka
-                createButton.disabled = false;
-                createButton.textContent = originalText;
-            }
-        });
-
-        document.getElementById('cancelCreateProfile').addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-
-        document.getElementById('closeCreateProfileModal').addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-
-        // Funkce, která počká na inicializaci
-        async function waitForInitialization() {
-            const maxWaitTime = 10000; // 10 sekund
-            const startTime = Date.now();
-    
-            while (!isAppInitialized && (Date.now() - startTime) < maxWaitTime) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-    
-            if (!isAppInitialized) {
-                throw new Error("Aplikace se nepodařilo inicializovat včas");
-            }
-        }
 
         // PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
         function searchByBarcode(barcode) {
@@ -949,9 +446,11 @@
             nutrientsHtmlContent += createNutrientRow('Polynenasycené', details.polyunsaturated_fat, null, null, 'nested', factor, false);
             nutrientsHtmlContent += createNutrientRow('Cholesterol', details.cholesterol, null, null, 'nested', factor, false);
             nutrientsHtmlContent += `</div>`;
+
             nutrientsHtmlContent += `<div class="nutrient-section">`;
             nutrientsHtmlContent += createNutrientRow('Vláknina', details.fiber, null, 'green', 'main', factor, true);
             nutrientsHtmlContent += `</div>`;
+
             nutrientsHtmlContent += `<div class="nutrient-section">`;
             nutrientsHtmlContent += createNutrientRow('Sůl', details.salt, null, null, 'main', factor, true, 'normal', '1.05em');
             nutrientsHtmlContent += createNutrientRow('Vápník', details.calcium, null, null, 'main', factor, false, 'normal', '1.05em');
@@ -966,8 +465,11 @@
 
         // Initialize Firebase and set up auth listener
         const initializeFirebase = async () => {
-            showGlobalLoading();
             try {
+                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId || !firebaseConfig.apiKey) {
+                    throw new Error("Firebase konfigurace je prázdná nebo neplatná (chybí projectId/apiKey).");
+                }
+
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -975,43 +477,120 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        console.log("Uživatel přihlášen:", userId);
-                
-                        // Zobrazit výběr profilu
-                        await showProfileModal();
-                        // Načtení posledního použitého profilu
-                        const lastProfileId = localStorage.getItem(`userProfile_${userId}`);
-        
-                        if (lastProfileId) {
-                            currentProfileId = lastProfileId;
-                            await loadProfileData();
-                        } else {
-                            await showProfileModal();
-                        }
-        
-                        isAppInitialized = true;
-                        console.log("Aplikace plně inicializována");
+                        console.log("Firebase Auth Ready. User ID:", userId);
+                        await loadUserSettings(); // Load settings after user is authenticated
                     } else {
-                        // Žádný uživatel není přihlášen - zobrazit přihlášení
-                        showLoginModal();
+                        if (initialAuthToken) {
+                            try {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                                await loadUserSettings();
+                            } catch (error) {
+                                console.error("Error signing in with custom token:", error);
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in anonymously due to custom token error. User ID:", userId);
+                                await loadUserSettings();
+                            }
+                        } else {
+                            await signInAnonymously(auth);
+                            userId = auth.currentUser.uid;
+                            console.log("Signed in anonymously. User ID:", userId);
+                            await loadUserSettings();
+                        }
                     }
+                    isAuthReady = true;
+                    document.getElementById('userIdDisplay').textContent = `Uživatel ID: ${userId}`;
+
+                    // Enable recipe buttons once auth is ready
+                    document.getElementById('recipesButton').disabled = false;
+                    
+                    // Initialize barcode scanner after auth is ready
+                    initBarcodeScanner();
                 });
             } catch (error) {
-                console.error("Chyba inicializace Firebase:", error);
-            }finally {
-                hideGlobalLoading();
+                console.error("Error initializing Firebase:", error);
+                alert("Chyba při inicializaci Firebase: " + error.message + " Zkuste prosím aplikaci znovu načíst.");
             }
         };
 
-        // Funkce pro uložení nastavení uživatele
-        async function saveUserSettings() {
-            
-            if (!db || !userId || !currentProfileId) {
-                console.warn("Firestore, User ID or Profile ID not available to save settings.");
+        // Function to load user settings from Firestore
+        async function loadUserSettings() {
+            if (!db || !userId) {
+                console.warn("Firestore or User ID not available to load settings.");
                 return;
             }
             try {
-                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings`);
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/userSettings`);
+                const settingsSnap = await getDoc(settingsDocRef);
+
+                if (settingsSnap.exists()) {
+                    userSettings = settingsSnap.data();
+                    console.log("User settings loaded:", userSettings);
+                } else {
+                    // If no settings exist, create default ones
+                    await setDoc(settingsDocRef, userSettings, { merge: true });
+                    console.log("Default user settings created.");
+                }
+                // Update the UI toggles based on loaded settings
+                const confirmRecipeCreationToggle = document.getElementById('confirmRecipeCreationToggle');
+                const confirmFoodAdditionToggle = document.getElementById('confirmFoodAdditionToggle');
+                const confirmDeleteRecipeToggle = document.getElementById('confirmDeleteRecipeToggle');
+                const confirmDeleteRecipeItemToggle = document.getElementById('confirmDeleteRecipeItemToggle'); // NEW
+                const confirmSaveChangesToggle = document.getElementById('confirmSaveChangesToggle'); // NEW
+                const confirmRecipeSaveSuccessToggle = document.getElementById('confirmRecipeSaveSuccessToggle'); // NEW
+                const confirmRecipeDeletionSuccessToggle = document.getElementById('confirmRecipeDeletionSuccessToggle');
+                const confirmRecipeDeletionErrorToggle = document.getElementById('confirmRecipeDeletionErrorToggle');
+
+                if (confirmRecipeCreationToggle) {
+                    confirmRecipeCreationToggle.checked = userSettings.confirmRecipeCreation;
+                }
+                if (confirmFoodAdditionToggle) {
+                    confirmFoodAdditionToggle.checked = userSettings.confirmFoodAddition;
+                }
+                if (confirmDeleteRecipeToggle) {
+                    confirmDeleteRecipeToggle.checked = userSettings.confirmDeleteRecipe;
+                }
+                if (confirmDeleteRecipeItemToggle) { // NEW
+                    confirmDeleteRecipeItemToggle.checked = userSettings.confirmDeleteRecipeItem;
+                }
+                if (confirmSaveChangesToggle) { // NEW
+                    confirmSaveChangesToggle.checked = userSettings.confirmSaveChanges;
+                }
+                if (confirmRecipeSaveSuccessToggle) { // NEW
+                    confirmRecipeSaveSuccessToggle.checked = userSettings.confirmRecipeSaveSuccess;
+                }
+                if (confirmRecipeDeletionSuccessToggle) {
+                    confirmRecipeDeletionSuccessToggle.checked = userSettings.confirmRecipeDeletionSuccess;
+                }
+                if (confirmRecipeDeletionErrorToggle) {
+                    confirmRecipeDeletionErrorToggle.checked = userSettings.confirmRecipeDeletionError;
+                }
+            } catch (error) {
+                console.error("Error loading user settings:", error);
+                // Fallback to default if loading fails
+                userSettings = {
+                    confirmRecipeCreation: true,
+                    confirmFoodAddition: true,
+                    confirmDeleteRecipe: true,
+                    confirmDeleteRecipeItem: true, // Ensure default is set here too
+                    confirmSaveChanges: true, // Ensure default is set here too
+                    confirmRecipeSaveSuccess: true, // Ensure default is set here too
+                    confirmRecipeDeletionSuccess: true,
+                    confirmRecipeDeletionError: true
+                };
+            }
+        }
+
+        // Function to save user settings to Firestore
+        async function saveUserSettings() {
+            if (!db || !userId) {
+                console.warn("Firestore or User ID not available to save settings.");
+                return;
+            }
+            try {
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/userSettings`);
                 await setDoc(settingsDocRef, userSettings, { merge: true });
                 console.log("User settings saved:", userSettings);
             } catch (error) {
@@ -1177,20 +756,20 @@
 
         // --- Firestore Functions (moved to global scope) ---
         async function createNewRecipe(recipeName, foodItem) {
-            if (!db || !userId || !currentProfileId) {
-                console.error("Není inicializováno: db nebo currentProfileId");
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
                 return;
             }
             try {
-                const recipesColRef = collection(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`);
+                const recipesColRef = collection(db, `artifacts/${appId}/users/${userId}/recipes`);
                 const newRecipeDoc = await addDoc(recipesColRef, {
                     name: recipeName,
-                    createdBy: userId, // Uložíme ID uživatele, který recept vytvořil
+                    userId: userId,
                     ingredients: foodItem ? [foodItem] : [], // Add the initial food item if provided
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 });
-                console.log("Nový recept vytvořen pod ID:", newRecipeDoc.id);
+                console.log("New recipe created with ID:", newRecipeDoc.id);
                 // Updated message with bold formatting
                 showCustomNotification(`Recept "<strong>${recipeName}</strong>" byl vytvořen a byla do něj vložena položka "<strong>${foodItem.foodName}</strong>"!`, 'recipeCreation');
                 return newRecipeDoc.id;
@@ -1202,24 +781,12 @@
         }
 
         async function addFoodItemToExistingRecipe(recipeId, foodItem) {
-            console.log("addFoodItemToExistingRecipe called with:", { 
-                recipeId, 
-                userId, 
-                currentProfileId,
-                appId 
-            });
-            
-            if (!db || !userId || !currentProfileId || !appId) {
-                console.error("Není inicializováno: db, userId nebo currentProfileId");
-                return;
-            }
-            if (!recipeId) {
-                console.error("Recipe ID is missing");
-                showCustomNotification("Chyba: ID receptu chybí.", 'error');
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
                 return;
             }
             try {
-                const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`, recipeId);
+                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
                 const recipeSnap = await getDoc(recipeDocRef);
 
                 if (recipeSnap.exists()) {
@@ -1243,13 +810,13 @@
         }
 
         async function updateFoodItemInRecipe(recipeId, ingredientIndex, updatedFoodItem) {
-            if (!db || !userId || !currentProfileId) {
-                console.error("Firestore, User ID or Profile ID not initialized.");
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
                 return;
             }
 
             // Declare recipeDocRef at the top of the function
-            const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`, recipeId);
+            const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
 
             const executeUpdate = async () => { // Wrap the core update logic in a function
                 try {
@@ -1294,15 +861,15 @@
         }
 
         async function deleteRecipe(recipeId, recipeName) {
-            if (!db || !userId || !currentProfileId) {
-        console.error("Firestore, User ID or Profile ID not initialized.");
-        return;
-    }
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
+                return;
+            }
             // Add a confirmation step before deleting
             // The third argument is a callback for 'confirm' action, and the fourth indicates if it's a confirmation type
             showCustomNotification(`Opravdu chcete odstranit recept "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipe', async () => {
                 try {
-                    const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`, recipeId);
+                    const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
                     await deleteDoc(recipeDocRef);
                     console.log(`Recipe ${recipeId} deleted.`);
                     showCustomNotification(`Recept "<strong>${recipeName}</strong>" byl úspěšně smazán.`, 'recipeDeletionSuccess');
@@ -1316,13 +883,13 @@
 
         // NEW: Function to delete a food item from a recipe
         async function deleteFoodItemFromRecipe(recipeId, ingredientIndex, ingredientName, recipeName) {
-            if (!db || !userId || !currentProfileId) {
-                console.error("Firestore, User ID or Profile ID not initialized.");
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
                 return;
             }
             showCustomNotification(`Opravdu chcete odstranit položku "<strong>${ingredientName}</strong>" z receptu "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipeItem', async () => {
                 try {
-                    const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`);
+                    const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
                     const recipeSnap = await getDoc(recipeDocRef);
 
                     if (recipeSnap.exists()) {
@@ -1353,8 +920,8 @@
         }
 
         async function loadUserRecipes(forAdding = false) {
-            if (!db || !userId || !currentProfileId) {
-                console.log("Není inicializováno: db nebo currentProfileId");
+            if (!db || !userId) {
+                console.error("Firestore or User ID not initialized.");
                 existingRecipesList.innerHTML = '<li class="no-recipes-message">Chyba: Aplikace se nenačetla správně.</li>';
                 return;
             }
@@ -1364,8 +931,9 @@
 
             try {
                 // Order by 'createdAt' in descending order for newest first
-                const q = query(collection(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`), orderBy('createdAt', 'desc'));
+                const q = query(collection(db, `artifacts/${appId}/users/${userId}/recipes`), orderBy('createdAt', 'desc'));
                 const querySnapshot = await getDocs(q);
+
                 existingRecipesList.innerHTML = ''; // Clear previous list
 
                 if (querySnapshot.empty) {
@@ -1436,13 +1004,14 @@
             document.getElementById('modalDetailsContent').classList.add('modal-recipe-container');
             detailsModal.style.display = 'flex';
             modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily receptu "${recipeName}"...</p>`;
-            if (!db || !userId || !currentProfileId) {
+
+            if (!db || !userId) {
                 modalDetailsContent.innerHTML = `<p class="error-details">Chyba: Aplikace se nenačetla správně. Nelze načíst recept.</p>`;
                 return;
             }
 
             try {
-                const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`, recipeId);
+                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, recipeId);
                 const recipeSnap = await getDoc(recipeDocRef);
 
                 if (!recipeSnap.exists()) {
@@ -2414,44 +1983,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const createNewProfileBtn = document.getElementById('createNewProfileBtn');
-    if (createNewProfileBtn) {
-        createNewProfileBtn.addEventListener('click', () => {
-            document.getElementById('profileModal').style.display = 'none';
-            showCreateProfileModal();
-        });
-    }
-
-    const confirmCreateProfile = document.getElementById('confirmCreateProfile');
-    if (confirmCreateProfile) {
-        confirmCreateProfile.addEventListener('click', async () => {
-            const profileName = document.getElementById('newProfileName').value.trim();
-            if (profileName) {
-                const newProfileId = await createNewProfile(profileName);
-                if (newProfileId) {
-                    await selectProfile(newProfileId);
-                    document.getElementById('createProfileModal').style.display = 'none';
-                }
-            }
-        });
-    }
-
-    const cancelCreateProfile = document.getElementById('cancelCreateProfile');
-    if (cancelCreateProfile) {
-        cancelCreateProfile.addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-    }
-
-    const closeCreateProfileModal = document.getElementById('closeCreateProfileModal');
-    if (closeCreateProfileModal) {
-        closeCreateProfileModal.addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-    }
-
     // Event listener pro nastavovací ikonku
     const settingsIcon = document.getElementById('settingsIcon');
     if (settingsIcon) {
@@ -3011,30 +2542,27 @@ if (searchForm) {
                     if (addToRecipeButton) {
                         addToRecipeButton.addEventListener('click', async (e) => {
                             e.stopPropagation();
-        
-                            if (!checkInitialization()) {
+                            console.log('Přidat do receptu clicked for:', name);
+                            if (!isAuthReady || !userId) {
+                                showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
                                 return;
                             }
-        
-                            console.log('Přidat do receptu clicked for:', name);
-                            await loadUserRecipes(true);
-                            detailsModal.style.display = 'none';
-                            selectRecipeModal.style.display = 'flex';
+                            await loadUserRecipes(true); // Load recipes before showing selection modal, pass true for adding
+                            detailsModal.style.display = 'none'; // Hide details modal
+                            selectRecipeModal.style.display = 'flex'; // Show select recipe modal
                         });
                     }
-
                     if (createAndAddRecipeButton) {
                         createAndAddRecipeButton.addEventListener('click', (e) => {
                             e.stopPropagation();
-        
-                            if (!checkInitialization()) {
+                            console.log('Vytvořit recept a přidat clicked for:', name);
+                            if (!isAuthReady || !userId) {
+                                showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
                                 return;
                             }
-        
-                            console.log('Vytvořit recept a přidat clicked for:', name);
-                            detailsModal.style.display = 'none';
-                            createRecipeModal.style.display = 'flex';
-                            newRecipeNameInput.value = '';
+                            detailsModal.style.display = 'none'; // Hide details modal
+                            createRecipeModal.style.display = 'flex'; // Show create recipe modal
+                            newRecipeNameInput.value = ''; // Clear input
                             newRecipeNameInput.focus();
                         });
                     }
@@ -3055,7 +2583,7 @@ if (searchForm) {
                             detailsModal.style.display = 'none';
                             // Optionally, reload the original recipe details if needed
                             if (currentEditingRecipeId) {
-                                const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`, currentEditingRecipeId);
+                                const recipeDocRef = doc(db, `artifacts/${appId}/users/${userId}/recipes`, currentEditingRecipeId);
                                 const recipeSnap = await getDoc(recipeDocRef);
                                 if (recipeSnap.exists()) {
                                     await showRecipeDetailsModal(currentEditingRecipeId, recipeSnap.data().name);
@@ -3094,13 +2622,12 @@ if (searchForm) {
         // Modified recipesButton listener
         if (recipesButton) {
             recipesButton.addEventListener('click', async () => {
-                try {
-                    await waitForInitialization();
-                    await loadUserRecipes();
-                    selectRecipeModal.style.display = 'flex';
-                } catch (error) {
-                    showCustomNotification("Aplikace není připravena. Zkuste to prosím znovu.", 'error');
+                if (!isAuthReady || !userId) {
+                    showCustomNotification("Prosím, počkejte, než se aplikace inicializuje a přihlásí.", 'info');
+                    return;
                 }
+                await loadUserRecipes(); // Load recipes when "Recepty" button is clicked
+                selectRecipeModal.style.display = 'flex'; // Show the select recipe modal directly
             });
         }
 
