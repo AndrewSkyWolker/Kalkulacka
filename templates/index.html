@@ -98,14 +98,12 @@
     <div id="createProfileModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button" id="closeCreateProfileModal">&times;</span>
-            <h3 style="text-align: center; margin-bottom: 20px;">Vytvořit nový profil</h3>
-
-            <input type="text" id="newProfileName" placeholder="Zadejte jméno profilu"
-                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
-
-            <div class="modal-action-buttons" style="display: flex; gap: 10px; justify-content: center;">
-                <button id="cancelCreateProfile" style="background-color: #f44336; color: white;">Zrušit</button>
-                <button id="confirmCreateProfile" style="background-color: #28a745; color: white;">Vytvořit</button>
+            <h3>Vytvořit nový profil</h3>
+            <input type="text" id="newProfileName" placeholder="Jméno profilu">
+            <div class="create-profile-buttons">
+                <button id="confirmCreateProfile">Vytvořit</button>
+                <button id="cancelCreateProfile">Zrušit</button>
+                
             </div>
         </div>
     </div>

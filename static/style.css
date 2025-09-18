@@ -704,21 +704,18 @@ button:hover {
     margin: 0;
     /* Override previous margin */
 }
-
+/*Zelené tlačítko*/
 #confirmCreateRecipeButton {
     background-color: #28a745;
-    /* Green */
     color: white;
 }
 
 #confirmCreateRecipeButton:hover {
     background-color: #218838;
-    /* Darker green */
 }
 
 #cancelCreateRecipeButton {
     background-color: #f44336;
-    /* Red */
     color: white;
     flex-basis: 40%;
     /* Approximately half the width, adjust as needed */
@@ -730,7 +727,6 @@ button:hover {
 
 #cancelCreateRecipeButton:hover {
     background-color: #d32f2f;
-    /* Darker red */
 }
 
 /* New modal for selecting a recipe */
@@ -1628,60 +1624,72 @@ button:hover {
 #createProfileModal .modal-content {
     max-width: 350px;
     text-align: center;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 20px;
 }
 
 #createProfileModal h3 {
-    color: #2c3e50;
-    margin-bottom: 25px;
-    font-size: 1.4em;
-    font-weight: 600;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    text-align: center;
+    font-size: 1.3em;
 }
 
 #newProfileName {
-    width: 100%;
-    padding: 14px 16px;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
+    width: calc(100% - 20px);
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
     font-size: 16px;
-    margin-bottom: 25px;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
-    font-family: inherit;
+    margin-bottom: 20px;
+    font-family: 'Dutch801 Rm BT', serif;
+    text-align: center;
+}
+
+.create-profile-buttons {
+    display: flex;
+    justify-content: space-between; /* Tlačítka na opačných stranách */
+    gap: 10px;
+    width: 100%;
+    margin-top: 15px;
 }
 
 #newProfileName:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: #000000;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
     transform: translateY(-1px);
 }
 
+/*#cancelCreateProfile, #confirmCreateProfile {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    flex-grow: 1;
+    max-width: 150px;
+    transition: background-color 0.3s ease;
+    margin: 0;
+}*/
 
 /* Červené tlačítko Zrušit */
 #cancelCreateProfile {
-    background: linear-gradient(135deg, #f44336, #d32f2f) !important;
-    color: white !important;
+    /* Zrušit - vpravo, standardní velikost */
+    order: 2; /* Druhé v pořadí (vpravo) */
+    flex: 1; /* Standardní velikost */
+    padding: 10px 15px;
+    background-color: #f44336;
+    color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    flex: 1;
-    box-shadow: 0 4px 6px rgba(244, 67, 54, 0.2);
+    font-size: 16px;
+    margin: 0;
 }
 
 #cancelCreateProfile:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(244, 67, 54, 0.3);
+    background-color: #d32f2f;
 }
 
 #cancelCreateProfile:active {
@@ -1690,24 +1698,24 @@ button:hover {
 
 /* Zelené tlačítko Vytvořit */
 #confirmCreateProfile {
-    background: linear-gradient(135deg, #28a745, #218838) !important;
-    color: white !important;
+    /* Vytvořit - vlevo, 2x delší */
+    order: 1; /* První v pořadí (vlevo) */
+    flex: 2; /* 2x větší než Zrušit */
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    flex: 1;
-    box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
+    font-size: 16px;
+    margin: 0;
 }
 
 #confirmCreateProfile:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+    background-color: #218838;
 }
 
-#confirmCreateProfile:active {
-    transform: translateY(0);
+#confirmCreateProfile:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 }
