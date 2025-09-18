@@ -1184,3 +1184,58 @@ button:hover { background-color: #0056b3; }
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Styly pro zobrazení aktuálního profilu */
+#currentProfileDisplay {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    text-align: left;
+    font-size: 0.8em;
+    color: #666;
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 6px 12px;
+    border-radius: 18px;
+    border: 1px solid #eee;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.profile-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+#currentProfileName {
+    font-weight: 500;
+    color: #333;
+    font-size: 1.2em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* Responzivní design pro menší obrazovky */
+@media (max-width: 480px) {
+    #currentProfileDisplay {
+        left: 10px;
+        padding: 5px 8px;
+        max-width: 180px;
+    }
+    
+    #currentProfileName {
+        max-width: 120px;
+        font-size: 0.8em;
+    }
+    
+    .profile-icon {
+        width: 20px;
+        height: 20px;
+    }
+}

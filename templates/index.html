@@ -21,7 +21,11 @@
         <div class="sticky-header-wrapper">
             <div id="userIdDisplay"></div> <!-- Přesunuto sem -->
             <h1>Kalorická kalkulačka</h1>
-
+            <!-- V levém horním rohu vedle userIdDisplay -->
+            <div id="currentProfileDisplay" style="display: none;">
+                <img src="{{ url_for('static', filename='icon/profil.png') }}" alt="Profil" class="profile-icon">
+                <span id="currentProfileName">Název profilu</span>
+            </div>
             <!-- Ikonka ozubeného kolečka pro nastavení (PNG obrázek) -->
             <img id="settingsIcon" src="{{ url_for('static', filename='icon/nastaveni.png') }}" alt="Nastavení" class="settings-icon">
 
@@ -346,6 +350,48 @@
         let isAppInitialized = false;
         let isCreatingProfile = false;
 
+        // Funkce pro zobrazení aktuálního profilu
+        function updateCurrentProfileDisplay(profileName) {
+            const profileDisplay = document.getElementById('currentProfileDisplay');
+            const profileNameSpan = document.getElementById('currentProfileName');
+    
+            if (profileDisplay && profileNameSpan) {
+                profileNameSpan.textContent = profileName;
+                profileDisplay.style.display = 'flex';
+            }
+        }
+
+        // Funkce pro skrytí zobrazení profilu
+        function hideCurrentProfileDisplay() {
+            const profileDisplay = document.getElementById('currentProfileDisplay');
+            if (profileDisplay) {
+                profileDisplay.style.display = 'none';
+            }
+        }
+
+        // Funkce pro načtení a zobrazení aktuálního profilu
+        async function loadAndDisplayCurrentProfile() {
+            if (!currentProfileId) {
+                hideCurrentProfileDisplay();
+                return;
+            }
+    
+            try {
+                const profileDocRef = doc(db, 'artifacts', appId, 'profiles', currentProfileId);
+                const profileSnap = await getDoc(profileDocRef);
+        
+                if (profileSnap.exists()) {
+                    const profileData = profileSnap.data();
+                    updateCurrentProfileDisplay(profileData.name);
+                } else {
+                    hideCurrentProfileDisplay();
+                }
+            } catch (error) {
+                console.error("Chyba při načítání profilu:", error);
+                hideCurrentProfileDisplay();
+            }
+        }
+
         function checkInitialization() {
             if (!isAppInitialized || !db || !userId || !currentProfileId) {
                 showCustomNotification("Prosím, počkejte, než se aplikace plně inicializuje.", 'info');
@@ -409,6 +455,7 @@
             try {
                 await signOut(auth);
                 console.log("Uživatel odhlášen");
+                hideCurrentProfileDisplay(); // Skrytí profilu při odhlášení
             } catch (error) {
                 console.error("Chyba odhlášení:", error);
             }
@@ -510,6 +557,9 @@
     
             // Uložení výběru do localStorage
             localStorage.setItem(`userProfile_${userId}`, profileId);
+
+             // Načtení a zobrazení názvu profilu
+            await loadAndDisplayCurrentProfile();
     
             // Skrytí modálního okna
             document.getElementById('profileModal').style.display = 'none';
@@ -991,6 +1041,7 @@
         
                         if (lastProfileId) {
                             currentProfileId = lastProfileId;
+                            await loadAndDisplayCurrentProfile(); // ZOBRAZENÍ PROFILU
                             await loadProfileData();
                         } else {
                             await showProfileModal();
@@ -1000,6 +1051,7 @@
                         console.log("Aplikace plně inicializována");
                     } else {
                         // Žádný uživatel není přihlášen - zobrazit přihlášení
+                        hideCurrentProfileDisplay(); // SKRYTÍ PROFILU
                         showLoginModal();
                     }
                 });
