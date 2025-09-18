@@ -524,6 +524,13 @@
         // Funkce pro vytvoření nového profilu
         async function createNewProfile(profileName) {
             console.log("createNewProfile called with:", profileName, "isCreatingProfile:", isCreatingProfile);
+            // Kontrola autentizace
+            if (!auth.currentUser) {
+                console.error("Uživatel není přihlášen");
+                showCustomNotification("Pro vytvoření profilu se musíte přihlásit", 'error');
+                return null;
+            }
+            
             // Ochrana proti dvojitému volání
             if (isCreatingProfile) {
                 console.log("⚠️ Profile creation already in progress - skipping");
@@ -561,7 +568,7 @@
                 });
         
                 // Vytvoření výchozích nastavení pro profil
-                const settingsRef = doc(db, `artifacts/${appId}/profiles/${newProfileRef.id}/settings`);
+                const settingsRef = doc(db, `artifacts/${appId}/profiles/${newProfileRef.id}/settings/userSettings`);
                 await setDoc(settingsRef, userSettings);
                 console.log("Nový profil byl vytvořen pod ID:", newProfileRef.id);
                 return newProfileRef.id;
@@ -673,7 +680,7 @@
             }
     
             try {
-                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings`);
+                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings/userSettings`);
                 const settingsSnap = await getDoc(settingsDocRef);
         
                 if (settingsSnap.exists()) {
@@ -1011,7 +1018,7 @@
                 return;
             }
             try {
-                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings`);
+                const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings/userSettings`);
                 await setDoc(settingsDocRef, userSettings, { merge: true });
                 console.log("User settings saved:", userSettings);
             } catch (error) {

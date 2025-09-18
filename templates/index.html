@@ -1329,7 +1329,7 @@
             }
             showCustomNotification(`Opravdu chcete odstranit položku "<strong>${ingredientName}</strong>" z receptu "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipeItem', async () => {
                 try {
-                    const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes`);
+                    const recipeDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/recipes/${recipeId}`);
                     const recipeSnap = await getDoc(recipeDocRef);
 
                     if (recipeSnap.exists()) {
