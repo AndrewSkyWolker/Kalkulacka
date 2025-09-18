@@ -21,10 +21,12 @@
         <div class="sticky-header-wrapper">
             <div id="userIdDisplay"></div> <!-- Přesunuto sem -->
             <h1>Kalorická kalkulačka</h1>
-            <!-- V levém horním rohu vedle userIdDisplay -->
+            <!-- V levém horním rohu -->
             <div id="currentProfileDisplay" style="display: none;">
-                <img src="{{ url_for('static', filename='icon/profil.png') }}" alt="Profil" class="profile-icon">
-                <span id="currentProfileName">Název profilu</span>
+                <div class="profile-display-clickable">
+                    <img src="{{ url_for('static', filename='icon/profil.png') }}" alt="Profil" class="profile-icon">
+                    <span id="currentProfileName">Název profilu</span>
+                </div>
             </div>
             <!-- Ikonka ozubeného kolečka pro nastavení (PNG obrázek) -->
             <img id="settingsIcon" src="{{ url_for('static', filename='icon/nastaveni.png') }}" alt="Nastavení" class="settings-icon">
@@ -70,10 +72,14 @@
         </div>
     </div>
 
-    <!-- Nové modální okno pro výběr profilu -->
+    <!-- Modální okno pro výběr profilu -->
     <div id="profileModal" class="modal-overlay">
         <div class="modal-content">
-            <h3>Výběr profilu</h3>
+            <span class="close-button" id="closeProfileModal">&times;</span>
+            <h3>Správa profilů</h3>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px; text-align: center;">
+                Vyberte si profil pro ukládání receptů a nastavení
+            </p>
             <div id="profileList">
                 <!-- Seznam profilů se načte zde -->
             </div>
@@ -350,6 +356,26 @@
         let isAppInitialized = false;
         let isCreatingProfile = false;
 
+        // Funkce pro otevření modálního okna profilu
+        function openProfileModalFromDisplay() {
+            if (isAppInitialized && userId) {
+                showProfileModal();
+            }
+        }
+
+        // Event listener pro kliknutí na profil
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileDisplay = document.getElementById('currentProfileDisplay');
+    
+            if (profileDisplay) {
+                profileDisplay.addEventListener('click', function(e) {
+                    // Zabráníme propagaci eventu, aby se neaktivovalo kliknutí mimo modální okno
+                    e.stopPropagation();
+                    openProfileModalFromDisplay();
+                });
+            }
+        });
+
         // Funkce pro zobrazení aktuálního profilu
         function updateCurrentProfileDisplay(profileName) {
             const profileDisplay = document.getElementById('currentProfileDisplay');
@@ -358,6 +384,9 @@
             if (profileDisplay && profileNameSpan) {
                 profileNameSpan.textContent = profileName;
                 profileDisplay.style.display = 'flex';
+
+                 // Přidáme title pro tooltip
+                profileDisplay.title = `Klikněte pro změnu profilu (${profileName})`;
             }
         }
 
@@ -489,41 +518,46 @@
         async function showProfileModal() {
             const profileModal = document.getElementById('profileModal');
             const profileList = document.getElementById('profileList');
-    
+
             // Načtení existujících profilů
             await loadUserProfiles();
-    
+
             if (userProfiles.length === 0) {
                 // Pokud neexistují žádné profily, přeskočte na vytvoření nového
                 showCreateProfileModal();
                 return;
             }
-    
+
             // Vytvoření seznamu profilů
             profileList.innerHTML = '';
             userProfiles.forEach(profile => {
                 const profileItem = document.createElement('div');
                 profileItem.classList.add('profile-item');
+                if (profile.id === currentProfileId) {
+                    profileItem.classList.add('active');
+                }
+        
                 profileItem.innerHTML = `
                     <span class="profile-name">${profile.name}</span>
                     <span class="profile-delete" data-profile-id="${profile.id}">🗑️</span>
                 `;
-        
+
                 profileItem.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('profile-delete')) {
                         selectProfile(profile.id);
+                        profileModal.style.display = 'none';
                     }
                 });
-        
+
                 const deleteBtn = profileItem.querySelector('.profile-delete');
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteProfile(profile.id);
                 });
-        
+                                     
                 profileList.appendChild(profileItem);
             });
-    
+
             profileModal.style.display = 'flex';
         }
 
@@ -769,6 +803,18 @@
                 }
             }
         }, 1000); // 1 sekunda debounce
+
+        // Event listener pro zavření modálního okna profilu
+        document.getElementById('closeProfileModal').addEventListener('click', function() {
+            document.getElementById('profileModal').style.display = 'none';
+        });
+
+        // Zavření kliknutím mimo okno
+        window.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('profileModal')) {
+                document.getElementById('profileModal').style.display = 'none';
+            }
+        });
 
         // Event listenery pro správu profilů
         document.getElementById('createNewProfileBtn').addEventListener('click', () => {

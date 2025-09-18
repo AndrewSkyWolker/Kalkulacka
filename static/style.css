@@ -1205,8 +1205,8 @@ button:hover { background-color: #0056b3; }
 }
 
 .profile-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -1214,7 +1214,7 @@ button:hover { background-color: #0056b3; }
 #currentProfileName {
     font-weight: 500;
     color: #333;
-    font-size: 1.2em;
+    font-size: 1.3em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1238,4 +1238,44 @@ button:hover { background-color: #0056b3; }
         width: 20px;
         height: 20px;
     }
+}
+
+/* Styly pro klikatelnou oblast profilu */
+.profile-display-clickable {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 16px;
+    transition: all 0.2s ease;
+}
+
+.profile-display-clickable:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.profile-display-clickable:active {
+    transform: scale(0.95);
+}
+
+/* Zvýraznění při najetí myší */
+#currentProfileDisplay:hover .profile-icon {
+    opacity: 0.8;
+}
+
+#currentProfileDisplay:hover #currentProfileName {
+    color: #007bff;
+}
+
+/* Zvýraznění aktivního profilu v seznamu */
+.profile-item.active {
+    border-color: #4CAF50;
+    background-color: #e8f5e9;
+}
+
+.profile-item.active .profile-name {
+    color: #2e7d32;
+    font-weight: bold;
 }
