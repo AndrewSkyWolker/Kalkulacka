@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="cs">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +9,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
+
 <body data-app-id="{{ app_id }}" data-firebase-config="{{ firebase_config_json }}">
     <div class="container">
         <!-- Indikátor načítání -->
-        <div id="globalLoading" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+        <div id="globalLoading"
+            style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
             <div style="text-align: center;">
                 <div style="margin-bottom: 10px;">Načítání aplikace...</div>
                 <div class="loading-spinner"></div>
@@ -29,7 +32,8 @@
                 </div>
             </div>
             <!-- Ikonka ozubeného kolečka pro nastavení (PNG obrázek) -->
-            <img id="settingsIcon" src="{{ url_for('static', filename='icon/nastaveni.png') }}" alt="Nastavení" class="settings-icon">
+            <img id="settingsIcon" src="{{ url_for('static', filename='icon/nastaveni.png') }}" alt="Nastavení"
+                class="settings-icon">
 
             <!-- Kontejner pro zarovnání tlačítka "Recepty" a vyhledávání -->
             <div class="search-and-recipes-container">
@@ -42,7 +46,8 @@
                 </div>
 
                 <form id="searchForm">
-                    <input type="text" id="query" name="query" placeholder="Zadejte název potraviny (např. jablko, kuře)">
+                    <input type="text" id="query" name="query"
+                        placeholder="Zadejte název potraviny (např. jablko, kuře)">
                     <button type="submit">Vyhledat</button>
                 </form>
             </div>
@@ -61,10 +66,10 @@
         <div class="modal-content">
             <h3>Přihlášení</h3>
             <div id="loginError" class="error" style="display: none;"></div>
-        
+
             <input type="email" id="loginEmail" placeholder="E-mail" required>
             <input type="password" id="loginPassword" placeholder="Heslo" required>
-        
+
             <div class="modal-action-buttons">
                 <button id="loginBtn">Přihlásit se</button>
                 <button id="registerBtn">Registrovat</button>
@@ -93,11 +98,14 @@
     <div id="createProfileModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button" id="closeCreateProfileModal">&times;</span>
-            <h3>Vytvořit nový profil</h3>
-            <input type="text" id="newProfileName" placeholder="Jméno profilu">
-            <div class="modal-action-buttons">
-                <button id="confirmCreateProfile">Vytvořit</button>
-                <button id="cancelCreateProfile">Zrušit</button>
+            <h3 style="text-align: center; margin-bottom: 20px;">Vytvořit nový profil</h3>
+
+            <input type="text" id="newProfileName" placeholder="Zadejte jméno profilu"
+                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+
+            <div class="modal-action-buttons" style="display: flex; gap: 10px; justify-content: center;">
+                <button id="cancelCreateProfile" style="background-color: #f44336; color: white;">Zrušit</button>
+                <button id="confirmCreateProfile" style="background-color: #28a745; color: white;">Vytvořit</button>
             </div>
         </div>
     </div>
@@ -109,25 +117,26 @@
 
             <!-- Přidáme speciální třídu pouze pro recepty -->
             <div id="modalDetailsContent" class="modal-details modal-recipe-container">
-    <!-- Fixní hlavička receptu -->
-    <div class="modal-recipe-header">
-        <img id="modalHeaderImage" src="{{ url_for('static', filename='icon/recepty.png') }}" alt="" class="modal-header-image">
-        <div class="modal-header-text">
-            <div id="modalHeaderName" class="modal-header-name">Název receptu</div>
-            <div class="energy-display-group">
-                <div id="totalKcalDisplay" class="energy-header">0 kcal</div>
-                <div id="totalKjDisplay" class="energy-sub-header">0 kJ</div>
-            </div>
-        </div>
-    </div>
+                <!-- Fixní hlavička receptu -->
+                <div class="modal-recipe-header">
+                    <img id="modalHeaderImage" src="{{ url_for('static', filename='icon/recepty.png') }}" alt=""
+                        class="modal-header-image">
+                    <div class="modal-header-text">
+                        <div id="modalHeaderName" class="modal-header-name">Název receptu</div>
+                        <div class="energy-display-group">
+                            <div id="totalKcalDisplay" class="energy-header">0 kcal</div>
+                            <div id="totalKjDisplay" class="energy-sub-header">0 kJ</div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Hlavní obsah s scrollováním -->
-    <div class="modal-scrollable-container">
-        <div id="nutrientDetailsSection"></div>
-        <h3 class="ingredients-title">Složení receptu:</h3>
-        <div id="recipeIngredientsList"></div>
-    </div>
-</div>
+                <!-- Hlavní obsah s scrollováním -->
+                <div class="modal-scrollable-container">
+                    <div id="nutrientDetailsSection"></div>
+                    <h3 class="ingredients-title">Složení receptu:</h3>
+                    <div id="recipeIngredientsList"></div>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -244,9 +253,11 @@
         <div class="modal-content" style="max-width: 90%; height: 70%;">
             <span class="close-button" id="closeBarcodeModal">&times;</span>
             <h3>Skenovat čárový kód</h3>
-            <div id="barcodeScannerContainer" style="width: 100%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; border-radius: 8px;">
+            <div id="barcodeScannerContainer"
+                style="width: 100%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; border-radius: 8px;">
                 <div id="barcodeUnsupportedMessage" style="text-align: center; padding: 20px;">
-                    <p style="font-size: 18px; margin-bottom: 15px;">🔒 Skenování čárových kódů není v tomto prohlížeči dostupné</p>
+                    <p style="font-size: 18px; margin-bottom: 15px;">🔒 Skenování čárových kódů není v tomto prohlížeči
+                        dostupné</p>
                     <p style="margin-bottom: 10px;">Pro skenování kódů fotoaparátem:</p>
                     <ul style="text-align: left; margin-bottom: 15px;">
                         <li>Použijte HTTPS připojení (zabezpečené)</li>
@@ -254,12 +265,17 @@
                         <li>Zkuste moderní prohlížeč (Chrome, Firefox, Edge)</li>
                     </ul>
                     <p>Můžete také zadat kód ručně:</p>
-                    <input type="text" id="manualBarcodeInput" placeholder="Zadejte čárový kód" style="padding: 10px; width: 200px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                    <button id="submitManualBarcode" style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Vyhledat</button>
+                    <input type="text" id="manualBarcodeInput" placeholder="Zadejte čárový kód"
+                        style="padding: 10px; width: 200px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                    <button id="submitManualBarcode"
+                        style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Vyhledat</button>
                 </div>
-                <video id="barcodeVideo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: none;"></video>
+                <video id="barcodeVideo"
+                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: none;"></video>
                 <canvas id="barcodeCanvas" style="display: none;"></canvas>
-                <div id="barcodeOverlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 30%; border: 2px solid #4CAF50; border-radius: 8px; pointer-events: none; display: none;"></div>
+                <div id="barcodeOverlay"
+                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 30%; border: 2px solid #4CAF50; border-radius: 8px; pointer-events: none; display: none;">
+                </div>
             </div>
             <div style="margin-top: 15px; text-align: center;">
                 <button id="toggleCameraButton" style="margin: 0 5px; display: none;">Přepnout kameru</button>
@@ -283,27 +299,27 @@
             signInWithEmailAndPassword,
             signOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            setDoc, 
-            updateDoc, 
-            addDoc, 
-            collection, 
-            query, 
-            where, 
-            getDocs, 
-            deleteDoc, 
-            serverTimestamp, 
-            orderBy 
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc,
+            updateDoc,
+            addDoc,
+            collection,
+            query,
+            where,
+            getDocs,
+            deleteDoc,
+            serverTimestamp,
+            orderBy
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables for Firebase (provided by Canvas environment)
         const bodyElement = document.body;
         const appId = bodyElement.dataset.appId;
         const firebaseConfigString = bodyElement.dataset.firebaseConfig;
-        
+
         console.log("DEBUG JS: Raw appId from data attribute:", appId);
         console.log("DEBUG JS: Raw firebaseConfigString from data attribute:", firebaseConfigString);
 
@@ -321,11 +337,11 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         const commonMisreads = {
-        '3921244567890': '6901234567843',
-        '12526048': '8595229926818',
-        '12345678': '8594001000108',
-        '21107887': '6901234567843', // Nově detekovaný kód
-        // Přidejte další časté chyby čtení
+            '3921244567890': '6901234567843',
+            '12526048': '8595229926818',
+            '12345678': '8594001000108',
+            '21107887': '6901234567843', // Nově detekovaný kód
+            // Přidejte další časté chyby čtení
         };
         let currentSearchXHR = null;
         let currentSearchController = null;
@@ -364,11 +380,11 @@
         }
 
         // Event listener pro kliknutí na profil
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const profileDisplay = document.getElementById('currentProfileDisplay');
-    
+
             if (profileDisplay) {
-                profileDisplay.addEventListener('click', function(e) {
+                profileDisplay.addEventListener('click', function (e) {
                     // Zabráníme propagaci eventu, aby se neaktivovalo kliknutí mimo modální okno
                     e.stopPropagation();
                     openProfileModalFromDisplay();
@@ -380,12 +396,12 @@
         function updateCurrentProfileDisplay(profileName) {
             const profileDisplay = document.getElementById('currentProfileDisplay');
             const profileNameSpan = document.getElementById('currentProfileName');
-    
+
             if (profileDisplay && profileNameSpan) {
                 profileNameSpan.textContent = profileName;
                 profileDisplay.style.display = 'flex';
 
-                 // Přidáme title pro tooltip
+                // Přidáme title pro tooltip
                 profileDisplay.title = `Klikněte pro změnu profilu (${profileName})`;
             }
         }
@@ -404,11 +420,11 @@
                 hideCurrentProfileDisplay();
                 return;
             }
-    
+
             try {
                 const profileDocRef = doc(db, 'artifacts', appId, 'profiles', currentProfileId);
                 const profileSnap = await getDoc(profileDocRef);
-        
+
                 if (profileSnap.exists()) {
                     const profileData = profileSnap.data();
                     updateCurrentProfileDisplay(profileData.name);
@@ -493,26 +509,29 @@
         // Funkce pro zobrazení modálního okna pro vytvoření nového profilu
         function showCreateProfileModal() {
             const createProfileModal = document.getElementById('createProfileModal');
-
+            const newProfileNameInput = document.getElementById('newProfileName');
             // Zkontrolujte, zda modální okno již je zobrazeno
             if (createProfileModal.style.display === 'flex') {
                 console.log("Create profile modal already shown");
                 return;
             }
 
-            const newProfileNameInput = document.getElementById('newProfileName');
-    
             // Resetovat vstupní pole
             newProfileNameInput.value = '';
-    
+
             // Zobrazit modální okno
             createProfileModal.style.display = 'flex';
-    
+
             // Focus na vstupní pole
             setTimeout(() => {
                 newProfileNameInput.focus();
             }, 100);
         }
+        // Validace inputu
+        document.getElementById('newProfileName').addEventListener('input', function (e) {
+            const confirmBtn = document.getElementById('confirmCreateProfile');
+            confirmBtn.disabled = e.target.value.trim().length === 0;
+        });
 
         // Funkce pro zobrazení modálního okna s profily
         async function showProfileModal() {
@@ -523,7 +542,6 @@
             await loadUserProfiles();
 
             if (userProfiles.length === 0) {
-                // Pokud neexistují žádné profily, přeskočte na vytvoření nového
                 showCreateProfileModal();
                 return;
             }
@@ -536,7 +554,7 @@
                 if (profile.id === currentProfileId) {
                     profileItem.classList.add('active');
                 }
-        
+
                 profileItem.innerHTML = `
                     <span class="profile-name">${profile.name}</span>
                     <span class="profile-delete" data-profile-id="${profile.id}">🗑️</span>
@@ -552,9 +570,9 @@
                 const deleteBtn = profileItem.querySelector('.profile-delete');
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    deleteProfile(profile.id);
+                    deleteProfile(profile.id); // Předáme SPRÁVNÉ ID profilu
                 });
-                                     
+
                 profileList.appendChild(profileItem);
             });
 
@@ -571,7 +589,7 @@
                 const profilesRef = collection(db, `artifacts/${appId}/profiles`);
                 const q = query(profilesRef, orderBy("createdAt", "asc"));
                 const querySnapshot = await getDocs(q);
-        
+
                 userProfiles = [];
                 querySnapshot.forEach((doc) => {
                     userProfiles.push({
@@ -588,19 +606,19 @@
         // Funkce pro výběr profilu
         async function selectProfile(profileId) {
             currentProfileId = profileId;
-    
+
             // Uložení výběru do localStorage
             localStorage.setItem(`userProfile_${userId}`, profileId);
 
-             // Načtení a zobrazení názvu profilu
+            // Načtení a zobrazení názvu profilu
             await loadAndDisplayCurrentProfile();
-    
+
             // Skrytí modálního okna
             document.getElementById('profileModal').style.display = 'none';
-    
+
             // Načtení dat vybraného profilu
             await loadProfileData();
-    
+
             // Povolení funkcí aplikace
             document.getElementById('recipesButton').disabled = false;
         }
@@ -614,20 +632,20 @@
                 showCustomNotification("Pro vytvoření profilu se musíte přihlásit", 'error');
                 return null;
             }
-            
+
             // Ochrana proti dvojitému volání
             if (isCreatingProfile) {
                 console.log("⚠️ Profile creation already in progress - skipping");
                 return null;
             }
-    
+
             isCreatingProfile = true; // Zamknutí funkce
 
             if (!db) {
                 isCreatingProfile = false;
                 return null;
             }
-    
+
             try {
                 console.log("✅ Starting profile creation for:", profileName);
                 // Nejprve zkontrolujte, zda profil se stejným názvem již existuje
@@ -636,13 +654,13 @@
                 // Kontrola existence profilu se stejným názvem
                 const q = query(profilesRef, where("name", "==", profileName));
                 const querySnapshot = await getDocs(q);
-        
+
                 if (!querySnapshot.empty) {
                     // Profil s tímto názvem již existuje
                     showCustomNotification(`Profil "${profileName}" již existuje.`, 'info');
                     return null;
                 }
-        
+
                 // Vytvořte nový profil pouze pokud neexistuje
                 const newProfileRef = await addDoc(profilesRef, {
                     name: profileName,
@@ -650,7 +668,7 @@
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 });
-        
+
                 // Vytvoření výchozích nastavení pro profil
                 const settingsRef = doc(db, `artifacts/${appId}/profiles/${newProfileRef.id}/settings/userSettings`);
                 await setDoc(settingsRef, userSettings);
@@ -659,7 +677,7 @@
             } catch (error) {
                 console.error("Chyba při vytváření profilu:", error);
                 return null;
-            }finally {
+            } finally {
                 isCreatingProfile = false; // Odemknutí funkce
                 console.log("🔓 Profile creation unlocked");
             }
@@ -670,41 +688,45 @@
             if (!confirm("Opravdu chcete smazat tento profil? Všechna data budou nenávratně ztracena.")) {
                 return;
             }
-    
+
             try {
                 // Smazání všech dat profilu
-                const profileRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}`);
+                const profileRef = doc(db, 'artifacts', appId, 'profiles', profileId);
                 await deleteDoc(profileRef);
-        
+
+                // Feedback pro uživatele
+                showCustomNotification("Profil byl úspěšně smazán", 'success');
+
                 // Načtení aktualizovaného seznamu profilů
                 await loadUserProfiles();
-        
+
                 // Pokud byl smazán aktuální profil, vyberte jiný nebo vytvořte nový
                 if (currentProfileId === profileId) {
                     currentProfileId = null;
                     localStorage.removeItem(`userProfile_${userId}`);
-            
+
                     if (userProfiles.length > 0) {
                         selectProfile(userProfiles[0].id);
                     } else {
                         showCreateProfileModal();
                     }
                 }
-        
+
                 // Obnovení zobrazení profilů
                 showProfileModal();
             } catch (error) {
                 console.error("Chyba při mazání profilu:", error);
+                showCustomNotification("Chyba při mazání profilu: " + error.message, 'error');
             }
         }
 
         // Funkce pro načtení dat profilu
         async function loadProfileData() {
             if (!currentProfileId) return;
-    
+
             // Načtení nastavení profilu
             await loadUserSettings();
-    
+
             // Načtení receptů profilu
             await loadUserRecipes();
         }
@@ -735,10 +757,10 @@
         function addEventListenerOnce(elementId, eventType, callback) {
             const element = document.getElementById(elementId);
             if (!element) return;
-    
+
             // Odstranění existujících listenerů
             element.removeEventListener(eventType, callback);
-    
+
             // Přidání nového listeneru
             element.addEventListener(eventType, callback);
         }
@@ -755,22 +777,22 @@
             }
         });
 
-        
+
         async function loadUserSettings() {
-            
+
             if (!db || !userId || !currentProfileId) {
                 console.error("Firestore, User ID or Profile ID not initialized.");
                 return;
             }
-    
+
             try {
                 const settingsDocRef = doc(db, `artifacts/${appId}/profiles/${currentProfileId}/settings/userSettings`);
                 const settingsSnap = await getDoc(settingsDocRef);
-        
+
                 if (settingsSnap.exists()) {
                     userSettings = settingsSnap.data();
                     updateSettingsUI();
-                }else {
+                } else {
                     // Vytvořit výchozí nastavení, pokud neexistuje
                     await setDoc(settingsDocRef, userSettings);
                 }
@@ -805,12 +827,12 @@
         }, 1000); // 1 sekunda debounce
 
         // Event listener pro zavření modálního okna profilu
-        document.getElementById('closeProfileModal').addEventListener('click', function() {
+        document.getElementById('closeProfileModal').addEventListener('click', function () {
             document.getElementById('profileModal').style.display = 'none';
         });
 
         // Zavření kliknutím mimo okno
-        window.addEventListener('click', function(event) {
+        window.addEventListener('click', function (event) {
             if (event.target === document.getElementById('profileModal')) {
                 document.getElementById('profileModal').style.display = 'none';
             }
@@ -824,18 +846,18 @@
 
         document.getElementById('confirmCreateProfile').addEventListener('click', async () => {
             const profileName = document.getElementById('newProfileName').value.trim();
-    
+
             if (!profileName) {
                 showCustomNotification("Prosím, zadejte název profilu.", 'info');
                 return;
             }
-    
+
             // Disable tlačítka během vytváření
             const createButton = document.getElementById('confirmCreateProfile');
             const originalText = createButton.textContent;
             createButton.disabled = true;
             createButton.textContent = "Vytváření...";
-    
+
             try {
                 const newProfileId = await createNewProfile(profileName);
                 if (newProfileId) {
@@ -865,11 +887,11 @@
         async function waitForInitialization() {
             const maxWaitTime = 10000; // 10 sekund
             const startTime = Date.now();
-    
+
             while (!isAppInitialized && (Date.now() - startTime) < maxWaitTime) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
-    
+
             if (!isAppInitialized) {
                 throw new Error("Aplikace se nepodařilo inicializovat včas");
             }
@@ -878,20 +900,20 @@
         // PŘIDEJTE TUTO FUNKCI - musí být v globálním scope
         function searchByBarcode(barcode) {
             console.log('Vyhledávám podle čárového kódu:', barcode);
-    
+
             // Nastavíme hodnotu do vyhledávacího pole
             const searchInput = document.getElementById('query');
             if (searchInput) {
                 searchInput.value = barcode;
             }
-    
+
             // Spustíme vyhledávání
             const searchForm = document.getElementById('searchForm');
             if (searchForm) {
                 // Vytvoříme a odešleme submit event
-                const submitEvent = new Event('submit', { 
-                    bubbles: true, 
-                    cancelable: true 
+                const submitEvent = new Event('submit', {
+                    bubbles: true,
+                    cancelable: true
                 });
                 searchForm.dispatchEvent(submitEvent);
             } else {
@@ -1079,12 +1101,12 @@
                     if (user) {
                         userId = user.uid;
                         console.log("Uživatel přihlášen:", userId);
-                
+
                         // Zobrazit výběr profilu
                         await showProfileModal();
                         // Načtení posledního použitého profilu
                         const lastProfileId = localStorage.getItem(`userProfile_${userId}`);
-        
+
                         if (lastProfileId) {
                             currentProfileId = lastProfileId;
                             await loadAndDisplayCurrentProfile(); // ZOBRAZENÍ PROFILU
@@ -1092,7 +1114,7 @@
                         } else {
                             await showProfileModal();
                         }
-        
+
                         isAppInitialized = true;
                         console.log("Aplikace plně inicializována");
                     } else {
@@ -1103,14 +1125,14 @@
                 });
             } catch (error) {
                 console.error("Chyba inicializace Firebase:", error);
-            }finally {
+            } finally {
                 hideGlobalLoading();
             }
         };
 
         // Funkce pro uložení nastavení uživatele
         async function saveUserSettings() {
-            
+
             if (!db || !userId || !currentProfileId) {
                 console.warn("Firestore, User ID or Profile ID not available to save settings.");
                 return;
@@ -1307,13 +1329,13 @@
         }
 
         async function addFoodItemToExistingRecipe(recipeId, foodItem) {
-            console.log("addFoodItemToExistingRecipe called with:", { 
-                recipeId, 
-                userId, 
+            console.log("addFoodItemToExistingRecipe called with:", {
+                recipeId,
+                userId,
                 currentProfileId,
-                appId 
+                appId
             });
-            
+
             if (!db || !userId || !currentProfileId || !appId) {
                 console.error("Není inicializováno: db, userId nebo currentProfileId");
                 return;
@@ -1400,9 +1422,9 @@
 
         async function deleteRecipe(recipeId, recipeName) {
             if (!db || !userId || !currentProfileId) {
-        console.error("Firestore, User ID or Profile ID not initialized.");
-        return;
-    }
+                console.error("Firestore, User ID or Profile ID not initialized.");
+                return;
+            }
             // Add a confirmation step before deleting
             // The third argument is a callback for 'confirm' action, and the fourth indicates if it's a confirmation type
             showCustomNotification(`Opravdu chcete odstranit recept "<strong>${recipeName}</strong>"?`, 'confirmDeleteRecipe', async () => {
@@ -1572,7 +1594,7 @@
                         let baseAmount = amount;
                         if (ingredient.unit === 'kg' || ingredient.unit === 'l') baseAmount *= 1000;
                         const factor = baseAmount / 100;
-                        
+
                         for (const key in aggregatedNutrients) {
                             if (ingredient.nutritionalDetails[key] && ingredient.nutritionalDetails[key] !== "N/A") {
                                 const { number: valNum } = parseValueAndUnit(ingredient.nutritionalDetails[key]);
@@ -1588,10 +1610,10 @@
                     let unit = '';
                     if (key.includes('kcal')) unit = 'kcal';
                     else if (key.includes('kj')) unit = 'kJ';
-                    else if (['protein','carbs','sugar','fat','saturated_fat','trans_fat',
-                             'monounsaturated_fat','polyunsaturated_fat','fiber','salt','water','phe'].includes(key)) unit = 'g';
-                    else if (['cholesterol','calcium','sodium'].includes(key)) unit = 'mg';
-                    
+                    else if (['protein', 'carbs', 'sugar', 'fat', 'saturated_fat', 'trans_fat',
+                        'monounsaturated_fat', 'polyunsaturated_fat', 'fiber', 'salt', 'water', 'phe'].includes(key)) unit = 'g';
+                    else if (['cholesterol', 'calcium', 'sodium'].includes(key)) unit = 'mg';
+
                     formattedAggregatedNutrients[key] = formatNumberForDisplay(aggregatedNutrients[key], unit, key.includes('kcal') || key.includes('kj'));
                 }
 
@@ -1622,7 +1644,7 @@
 
                 modalDetailsContent.innerHTML = recipeDetailsHtml;
 
-                
+
                 // Render nutrientů
                 renderAllNutrientDetails(formattedAggregatedNutrients);
 
@@ -1720,186 +1742,186 @@
             }
         }
 
-// --- Barcode Scanner Functions ---
-let barcodeModal = null;
-let barcodeVideo = null;
-let barcodeCanvas = null;
-let barcodeOverlay = null;
-let barcodeStatus = null;
-let stream = null;
-let currentDeviceId = null;
-let facingMode = 'environment';
-let flashEnabled = false;
-let scanInterval = null;
-let quaggaInitialized = false;
+        // --- Barcode Scanner Functions ---
+        let barcodeModal = null;
+        let barcodeVideo = null;
+        let barcodeCanvas = null;
+        let barcodeOverlay = null;
+        let barcodeStatus = null;
+        let stream = null;
+        let currentDeviceId = null;
+        let facingMode = 'environment';
+        let flashEnabled = false;
+        let scanInterval = null;
+        let quaggaInitialized = false;
 
-function debugCameraStream() {
-    if (barcodeVideo && barcodeVideo.srcObject) {
-        console.log('Video dimensions:', barcodeVideo.videoWidth, 'x', barcodeVideo.videoHeight);
-        console.log('Video ready state:', barcodeVideo.readyState);
-        console.log('Stream active:', barcodeVideo.srcObject.active);
-        
-        const tracks = barcodeVideo.srcObject.getVideoTracks();
-        if (tracks.length > 0) {
-            console.log('Track settings:', tracks[0].getSettings());
-        }
-    }
-}
+        function debugCameraStream() {
+            if (barcodeVideo && barcodeVideo.srcObject) {
+                console.log('Video dimensions:', barcodeVideo.videoWidth, 'x', barcodeVideo.videoHeight);
+                console.log('Video ready state:', barcodeVideo.readyState);
+                console.log('Stream active:', barcodeVideo.srcObject.active);
 
-// Inicializace skeneru čárových kódů
-function initBarcodeScanner() {
-    barcodeModal = document.getElementById('barcodeModal');
-    barcodeVideo = document.getElementById('barcodeVideo');
-    barcodeCanvas = document.getElementById('barcodeCanvas');
-    barcodeOverlay = document.getElementById('barcodeOverlay');
-    barcodeStatus = document.getElementById('barcodeStatus');
-    
-    // Event listenery pro modální okno skeneru
-    document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
-    document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
-    document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
-    document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
-    
-    // Event listener pro tlačítko skeneru
-    document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
-    
-    // Inicializace QuaggaJS
-    //initQuagga();
-}
-
-// Inicializace QuaggaJS
-function initQuagga() {
-  if (typeof Quagga !== 'undefined') {
-        try {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: barcodeVideo,
-                    constraints: {
-                        width: 1280,
-                        height: 720, 
-                        facingMode: facingMode,
-                        aspectRatio: { min: 1, max: 2 }
-                    },
-                },
-                decoder: {
-                    readers: ["ean_reader", "ean_8_reader"], // Primárně EAN
-                    multiple: false,
-                    // Specifická konfigurace pro EAN
-                    resolution: 800, // Zvyšte rozlišení pro lepší detekci
-                    patchSize: "x-large", // Větší oblast pro detekci
-                },
-                locator: {
-                    patchSize: "large",
-                    halfSample: true,
-                    // Konfigurace pro lepší detekci EAN-13
-                    debug: {
-                        showCanvas: false,
-                        showPatches: false,
-                        showFoundPatches: false,
-                        showSkeleton: false
-                    }
-                },
-                preprocessor: {
-                // Zvýší kontrast pro lepší čitelnost
-                    contrast: {
-                    min: 32,
-                    max: 220
-                    },
-                    // Zvýší ostrost
-                    sharpen: {
-                    flat: 1.0,
-                    jagged: 2.0
-                    }
-                },
-                frequency: 5,
-                numOfWorkers: 2,
-                debug: false // Vypnout debug pro lepší výkon
-                }, function(err) {
-                    if (err) {
-                        console.error("Chyba při inicializaci Quagga:", err);
-                        barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
-                        barcodeStatus.style.color = 'red';
-                        return;
-                    }
-                
-                quaggaInitialized = true;
-                console.log("Quagga inicializována");
-                
-                Quagga.onDetected(function(result) {
-                    console.log('Quagga result:', result);
-        
-                    if (result && result.codeResult && result.codeResult.code) {
-                        console.log('Detekován kód:', result.codeResult.code, 
-                                   'typ:', result.codeResult.format,
-                                   'confidence:', result.codeResult.confidence);
-            
-                        // Přidejte více debug info
-                        if (result.codeResult.decoded) {
-                           console.log('Decoded info:', result.codeResult.decoded);
-                        }
-            
-                        // Filtr podle confidence pokud je dostupná
-                        if (result.codeResult.confidence !== undefined && 
-                            result.codeResult.confidence < 0.3) {
-                            console.log('Příliš nízká confidence, ignoruji:', result.codeResult.confidence);
-                            return;
-                        }
-            
-                        handleBarcodeDetected(result.codeResult.code, result);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Výjimka při inicializaci Quaggy:', error);
-        }
-    }
-}
-
-// Fallback funkce pro canvas detection
-function startCanvasFallback() {
-    barcodeStatus.textContent = 'Používám základní detekci...';
-    barcodeStatus.style.color = 'orange';
-    
-    scanInterval = setInterval(async () => {
-        if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
-            try {
-                const barcodes = await detectBarcodesWithCanvas();
-                if (barcodes.length > 0) {
-                    handleBarcodeDetected(barcodes[0]);
+                const tracks = barcodeVideo.srcObject.getVideoTracks();
+                if (tracks.length > 0) {
+                    console.log('Track settings:', tracks[0].getSettings());
                 }
-            } catch (error) {
-                console.error('Chyba při detekci čárového kódu:', error);
             }
         }
-    }, 1000);
-}
 
-// Odeslání ručně zadaného čárového kódu
-function submitManualBarcode() {
-    const manualBarcodeInput = document.getElementById('manualBarcodeInput');
-    const barcode = manualBarcodeInput.value.trim();
-    
-    if (barcode) {
-        closeBarcodeScanner();
-        searchByBarcode(barcode);
-    } else {
-        barcodeStatus.textContent = 'Prosím, zadejte čárový kód';
-        barcodeStatus.style.color = 'red';
-    }
-}
+        // Inicializace skeneru čárových kódů
+        function initBarcodeScanner() {
+            barcodeModal = document.getElementById('barcodeModal');
+            barcodeVideo = document.getElementById('barcodeVideo');
+            barcodeCanvas = document.getElementById('barcodeCanvas');
+            barcodeOverlay = document.getElementById('barcodeOverlay');
+            barcodeStatus = document.getElementById('barcodeStatus');
 
-function isMobileDevice() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+            // Event listenery pro modální okno skeneru
+            document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
+            document.getElementById('toggleCameraButton').addEventListener('click', toggleCamera);
+            document.getElementById('toggleFlashButton').addEventListener('click', toggleFlash);
+            document.getElementById('submitManualBarcode').addEventListener('click', submitManualBarcode);
 
-// Otevření skeneru čárových kódů
-async function openBarcodeScanner() {
-    console.log('Otevírám skener...');
-    barcodeModal.style.display = 'flex';
-    barcodeStatus.textContent = 'Inicializace...';
-    barcodeStatus.innerHTML = `
+            // Event listener pro tlačítko skeneru
+            document.getElementById('barcodeButton').addEventListener('click', openBarcodeScanner);
+
+            // Inicializace QuaggaJS
+            //initQuagga();
+        }
+
+        // Inicializace QuaggaJS
+        function initQuagga() {
+            if (typeof Quagga !== 'undefined') {
+                try {
+                    Quagga.init({
+                        inputStream: {
+                            name: "Live",
+                            type: "LiveStream",
+                            target: barcodeVideo,
+                            constraints: {
+                                width: 1280,
+                                height: 720,
+                                facingMode: facingMode,
+                                aspectRatio: { min: 1, max: 2 }
+                            },
+                        },
+                        decoder: {
+                            readers: ["ean_reader", "ean_8_reader"], // Primárně EAN
+                            multiple: false,
+                            // Specifická konfigurace pro EAN
+                            resolution: 800, // Zvyšte rozlišení pro lepší detekci
+                            patchSize: "x-large", // Větší oblast pro detekci
+                        },
+                        locator: {
+                            patchSize: "large",
+                            halfSample: true,
+                            // Konfigurace pro lepší detekci EAN-13
+                            debug: {
+                                showCanvas: false,
+                                showPatches: false,
+                                showFoundPatches: false,
+                                showSkeleton: false
+                            }
+                        },
+                        preprocessor: {
+                            // Zvýší kontrast pro lepší čitelnost
+                            contrast: {
+                                min: 32,
+                                max: 220
+                            },
+                            // Zvýší ostrost
+                            sharpen: {
+                                flat: 1.0,
+                                jagged: 2.0
+                            }
+                        },
+                        frequency: 5,
+                        numOfWorkers: 2,
+                        debug: false // Vypnout debug pro lepší výkon
+                    }, function (err) {
+                        if (err) {
+                            console.error("Chyba při inicializaci Quagga:", err);
+                            barcodeStatus.textContent = 'Nepodařilo se inicializovat skener';
+                            barcodeStatus.style.color = 'red';
+                            return;
+                        }
+
+                        quaggaInitialized = true;
+                        console.log("Quagga inicializována");
+
+                        Quagga.onDetected(function (result) {
+                            console.log('Quagga result:', result);
+
+                            if (result && result.codeResult && result.codeResult.code) {
+                                console.log('Detekován kód:', result.codeResult.code,
+                                    'typ:', result.codeResult.format,
+                                    'confidence:', result.codeResult.confidence);
+
+                                // Přidejte více debug info
+                                if (result.codeResult.decoded) {
+                                    console.log('Decoded info:', result.codeResult.decoded);
+                                }
+
+                                // Filtr podle confidence pokud je dostupná
+                                if (result.codeResult.confidence !== undefined &&
+                                    result.codeResult.confidence < 0.3) {
+                                    console.log('Příliš nízká confidence, ignoruji:', result.codeResult.confidence);
+                                    return;
+                                }
+
+                                handleBarcodeDetected(result.codeResult.code, result);
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('Výjimka při inicializaci Quaggy:', error);
+                }
+            }
+        }
+
+        // Fallback funkce pro canvas detection
+        function startCanvasFallback() {
+            barcodeStatus.textContent = 'Používám základní detekci...';
+            barcodeStatus.style.color = 'orange';
+
+            scanInterval = setInterval(async () => {
+                if (barcodeVideo.readyState === barcodeVideo.HAVE_ENOUGH_DATA) {
+                    try {
+                        const barcodes = await detectBarcodesWithCanvas();
+                        if (barcodes.length > 0) {
+                            handleBarcodeDetected(barcodes[0]);
+                        }
+                    } catch (error) {
+                        console.error('Chyba při detekci čárového kódu:', error);
+                    }
+                }
+            }, 1000);
+        }
+
+        // Odeslání ručně zadaného čárového kódu
+        function submitManualBarcode() {
+            const manualBarcodeInput = document.getElementById('manualBarcodeInput');
+            const barcode = manualBarcodeInput.value.trim();
+
+            if (barcode) {
+                closeBarcodeScanner();
+                searchByBarcode(barcode);
+            } else {
+                barcodeStatus.textContent = 'Prosím, zadejte čárový kód';
+                barcodeStatus.style.color = 'red';
+            }
+        }
+
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Otevření skeneru čárových kódů
+        async function openBarcodeScanner() {
+            console.log('Otevírám skener...');
+            barcodeModal.style.display = 'flex';
+            barcodeStatus.textContent = 'Inicializace...';
+            barcodeStatus.innerHTML = `
     <div style="margin-bottom: 10px; font-weight: bold;">🔍 Skenování čárového kódu</div>
     <div style="font-size: 14px; color: #666; line-height: 1.4;">
         • Namiřte kód do zeleného rámečku<br>
@@ -1908,8 +1930,8 @@ async function openBarcodeScanner() {
     </div>
 `;
 
-    if (isMobileDevice()) {
-  barcodeStatus.innerHTML = `
+            if (isMobileDevice()) {
+                barcodeStatus.innerHTML = `
     <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
     <div style="font-size: 12px; color: #666;">
       • Zaostření proběhne automaticky<br>
@@ -1917,8 +1939,8 @@ async function openBarcodeScanner() {
       • Zkontrolujte osvětlení
     </div>
   `;
-} else {
-  barcodeStatus.innerHTML = `
+            } else {
+                barcodeStatus.innerHTML = `
     <div style="font-weight: bold; margin-bottom: 10px;">Namiřte na čárový kód</div>
     <div style="font-size: 12px; color: #666;">
       • Ujistěte se, že kód je v dobrém osvětlení<br>
@@ -1926,789 +1948,789 @@ async function openBarcodeScanner() {
       • Přibližte/oddalte podle potřeby
     </div>
   `;
-}
-    
-    // Inicializujeme Quaggu až při otevření modálního okna
-    if (!quaggaInitialized) {
-        initQuagga();
-    }
-
-    // Zkontrolujeme, zda je API dostupné
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
-        barcodeStatus.style.color = 'red';
-        return;
-    }
-
-    try {
-        await startCamera();
-        debugCameraStream();
-        barcodeStatus.textContent = 'Namiřte na čárový kód';
-        
-        // POČKÁME, NEŽ SE VIDEO NAČTE
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        startBarcodeScanning();
-    } catch (error) {
-        console.error('Chyba při inicializaci kamery:', error);
-        barcodeStatus.textContent = 'Chyba: ' + error.message;
-        barcodeStatus.style.color = 'red';
-        
-        // POKUS O OBNOVU QUAGGY
-        if (quaggaInitialized) {
-            try {
-                Quagga.stop();
-                // Počkáme a zkusíme znovu
-                setTimeout(() => {
-                    if (barcodeModal.style.display === 'flex') {
-                        startBarcodeScanning();
-                    }
-                }, 1000);
-            } catch (e) {
-                console.error('Nelze obnovit Quaggu:', e);
             }
-        }
-    }
-}
 
-function restartQuagga() {
-    console.log('Restartuji Quaggu...');
-    
-    if (typeof Quagga !== 'undefined') {
-        try {
-            // Zastavíme současnou instanci
-            if (quaggaInitialized) {
-                Quagga.stop();
-                Quagga.offDetected();
-                Quagga.offProcessed();
-            }
-            
-            // Resetujeme stav
-            quaggaInitialized = false;
-            lastDetectedBarcode = null;
-            
-            // Počkáme chvíli
-            setTimeout(() => {
+            // Inicializujeme Quaggu až při otevření modálního okna
+            if (!quaggaInitialized) {
                 initQuagga();
-                console.log('Quagga restartována');
-            }, 500);
-            
-        } catch (error) {
-            console.error('Chyba při restartu Quaggy:', error);
-        }
-    }
-}
-
-// Spuštění kamery
-async function startCamera() {
-    // Zastavíme existující stream
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-    }
-    
-    const constraints = {
-        video: {
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 60 }, // vyšší fps pro plynulejší video
-            facingMode: facingMode,
-        }
-    };
-    
-    // Pokud máme uložené deviceId, použijeme ho
-    if (currentDeviceId) {
-        constraints.video.deviceId = { exact: currentDeviceId };
-    }
-    
-    try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        barcodeVideo.srcObject = stream;
-        barcodeVideo.style.display = 'block';
-        document.getElementById('barcodeUnsupportedMessage').style.display = 'none';
-        document.getElementById('toggleCameraButton').style.display = 'inline-block';
-        document.getElementById('toggleFlashButton').style.display = 'inline-block';
-        barcodeOverlay.style.display = 'block';
-        
-        // Explicitně nastavte velikost videa pro Quagga
-        barcodeVideo.width = 640;
-        barcodeVideo.height = 480;
-        
-        // Uložíme deviceId pro příště
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-            currentDeviceId = videoTrack.getSettings().deviceId;
-        }
-        
-        // Čekáme na načtení videa
-        return new Promise((resolve) => {
-            barcodeVideo.onloadedmetadata = () => {
-                barcodeVideo.play().then(() => {
-                    console.log('Video started playing');
-                    resolve();
-                }).catch(error => {
-                    console.error('Error playing video:', error);
-                    resolve();
-                });
-            };
-            
-            // Fallback timeout
-            setTimeout(() => resolve(), 1000);
-        });
-    } catch (error) {
-        console.error('Chyba při přístupu ke kameře:', error);
-        document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
-        barcodeVideo.style.display = 'none';
-        document.getElementById('toggleCameraButton').style.display = 'none';
-        document.getElementById('toggleFlashButton').style.display = 'none';
-        barcodeOverlay.style.display = 'none';
-        
-        barcodeStatus.textContent = 'Použijte ruční zadání kódu';
-        throw error;
-    }
-}
-
-// Spuštění skenování čárových kódů
-function startBarcodeScanning() {
-    console.log('Spouštím skenování...');
-    
-    // Zastavíme existující interval
-    if (scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
-    }
-    
-    // Nastavíme časový limit pro skenování (20 sekund)
-    if (detectionTimeout) {
-        clearTimeout(detectionTimeout);
-    }
-    detectionTimeout = setTimeout(() => {
-        console.log('Časový limit skenování vypršel');
-        barcodeStatus.textContent = 'Časový limit vypršel - zkuste to znovu';
-        barcodeStatus.style.color = 'orange';
-        restartQuagga();
-    }, 20000);
-    
-    // ZKONTROLUJEME, zda je Quagga připravena a video funguje
-    if (quaggaInitialized && barcodeVideo && barcodeVideo.srcObject) {
-        try {
-            Quagga.start();
-            barcodeStatus.textContent = 'Skenování spuštěno - namiřte na čárový kód';
-            console.log('Quagga úspěšně restartována');
-        } catch (error) {
-            console.error('Chyba při startu Quaggy:', error);
-            // Fallback na canvas
-            startCanvasFallback();
-        }
-    } else {
-        console.log('Quagga není inicializována nebo video nefunguje, používám fallback');
-        // Fallback: použijeme intervalové kontrolování pomocí canvasu
-        startCanvasFallback();
-    }
-}
-
-
-// Detekce čárových kódů pomocí canvasu (fallback)
-function detectBarcodesWithCanvas() {
-    return new Promise((resolve) => {
-        if (!barcodeVideo.videoWidth || !barcodeVideo.videoHeight) {
-            resolve([]);
-            return;
-        }
-        
-        const context = barcodeCanvas.getContext('2d');
-        const width = barcodeVideo.videoWidth;
-        const height = barcodeVideo.videoHeight;
-        
-        // Nastavíme velikost canvasu
-        barcodeCanvas.width = width;
-        barcodeCanvas.height = height;
-        
-        // Nakreslíme aktuální snímek videa na canvas
-        context.drawImage(barcodeVideo, 0, 0, width, height);
-        
-        try {
-            // Zjednodušená detekce - v reálné aplikaci byste použili knihovnu
-            const imageData = context.getImageData(0, 0, width, height);
-            const detectedBarcodes = detectSimpleBarcodes(imageData);
-            resolve(detectedBarcodes);
-        } catch (error) {
-            console.error('Chyba při detekci:', error);
-            resolve([]);
-        }
-    });
-}
-
-// Jednoduchá detekce čárových kódů (vylepšená)
-function detectSimpleBarcodes(imageData) {
-    const data = imageData.data;
-    const width = imageData.width;
-    const height = imageData.height;
-    const barcodes = [];
-    
-    // Projedeme pouze středovou oblast (30% výšky)
-    const startY = Math.floor(height * 0.35);
-    const endY = Math.floor(height * 0.65);
-    
-    for (let y = startY; y <= endY; y += Math.floor(height * 0.05)) {
-        let inBar = false;
-        let barStart = 0;
-        let bars = [];
-        let barCount = 0;
-        
-        for (let x = 0; x < width; x++) {
-            const index = (y * width + x) * 4;
-            const r = data[index];
-            const g = data[index + 1];
-            const b = data[index + 2];
-            
-            const brightness = (r + g + b) / 3;
-            const isDark = brightness < 80; // Přísnější threshold
-            
-            if (isDark && !inBar) {
-                inBar = true;
-                barStart = x;
-                barCount++;
-            } else if (!isDark && inBar) {
-                inBar = false;
-                const barWidth = x - barStart;
-                
-                // Filtrujeme příliš široké/úzké pruhy
-                if (barWidth > 2 && barWidth < 50) {
-                    bars.push({ start: barStart, end: x, width: barWidth });
-                }
             }
-        }
-        
-        // EAN kód má obvykle 30-60 pruhů
-        if (bars.length > 25 && bars.length < 65) {
-            console.log('Nalezen potenciální čárový kód s', bars.length, 'pruhy');
-            
-            // Zkusíme extrahovat numerickou hodnotu
-            const numericPattern = extractNumericPattern(bars);
-            if (numericPattern && numericPattern.length >= 8) {
-                barcodes.push(numericPattern);
-                break; // Našli jsme platný kód, přestaneme hledat
-            }
-        }
-    }
-    
-    return barcodes;
-}
 
-function extractNumericPattern(bars) {
-    // Jednoduchá heuristika - v reálné aplikaci by bylo potřeba proper dekódování
-    const widths = bars.map(bar => bar.width);
-    const avgWidth = widths.reduce((a, b) => a + b, 0) / widths.length;
-    
-    // Binární reprezentace podle šířky pruhů
-    let binary = '';
-    for (const bar of bars) {
-        binary += bar.width > avgWidth ? '1' : '0';
-    }
-    
-    // Zkusíme najít něco, co vypadá jako EAN (13 nebo 8 číslic)
-    if (binary.length >= 95) { // EAN-13 má cca 95 modulů
-        return 'PRAVDĚPODOBNY_EAN_13';
-    } else if (binary.length >= 67) { // EAN-8 má cca 67 modulů
-        return 'PRAVDĚPODOBNY_EAN_8';
-    }
-    
-    return null;
-}
-
-
-
-// Přidejte tuto funkci do svého kódu (nejlépe nad handleBarcodeDetected)
-function isValidEAN(barcode) {
-  // Kontrola délky EAN (8 nebo 13 číslic)
-  if (!/^\d{8}$|^\d{13}$/.test(barcode)) {
-    return false;
-  }
-  
-  // Kontrola checksumu pomocí existující funkce validateEANChecksum
-  return validateEANChecksum(barcode);
-}
-
-let lastDetectedBarcode = null;
-let detectionTimeout = null;
-
-// Zpracování nalezeného čárového kódu
-function handleBarcodeDetected(barcode, quaggaResult) {
-  if (lastDetectedBarcode === barcode) {
-    console.log('Ignoruji opakovanou detekci stejného kódu:', barcode);
-    return;
-  }
-  
-  console.log('Nalezen čárový kód:', barcode);
-  console.log('Raw pattern:', quaggaResult.pattern);
-  console.log('Pattern length:', quaggaResult.pattern.length);
-  console.log('Bounding box:', quaggaResult.box);
-  // Upravte handleBarcodeDetected - přidejte před validací:
-    if (commonMisreads[barcode]) {
-    console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
-    barcode = commonMisreads[barcode];
-    }
-
-  // Validace formátu a checksumu
-  const isValid = isValidEAN(barcode);
-  //const patternAnalysis = analyzePattern(result.pattern);
-  //console.log('Pattern analysis:', patternAnalysis);
-
-  if (!isValid) {
-    console.log('Neplatný formát nebo checksum kódu:', barcode);
-    barcodeStatus.textContent = `Neplatný kód: ${barcode}`;
-    barcodeStatus.style.color = 'orange';
-    return;
-  }
-  
-  // Pokud vše projde, uložíme a zpracujeme kód
-  lastDetectedBarcode = barcode;
-  barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
-  barcodeStatus.style.color = '#4CAF50';
-
-  // Vizuální feedback
-  barcodeOverlay.classList.add('barcode-found');
-  
-  // Zastavíme skenování
-  if (quaggaInitialized) {
-    Quagga.stop();
-  }
-  
-  // Po krátké prodlevě zavřeme skener a vyhledáme
-  setTimeout(() => {
-    closeBarcodeScanner();
-    searchByBarcode(barcode);
-  }, 1000);
-  
-  // Odstraníme animaci po dokončení
-  setTimeout(() => {
-    barcodeOverlay.classList.remove('barcode-found');
-  }, 1500);
-
-    // Přidejte do handleBarcodeDetected
-    if (barcode === '12526048' && expectedCode === '8595229926818') {
-        console.log('Opravuji detekovaný kód na správný');
-        barcode = '8595229926818'; // MANUÁLNÍ OPRAVA
-    }
-
-    
-if (commonMisreads[barcode]) {
-    console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
-    barcode = commonMisreads[barcode];
-}
-
-    if (!isValidEAN && !isValidUPC) {
-        console.log('Ignoruji neplatný formát kódu:', barcode);
-        return;
-    }
-    
-    // DODATEČNÁ KONTROLA - EAN checksum validation
-    if (!validateEANChecksum(barcode)) {
-        console.log('Neplatný checksum pro kód:', barcode);
-        return;
-    }
-    
-    // Vizuální feedback
-    barcodeOverlay.classList.add('barcode-found');
-    barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
-    barcodeStatus.style.color = '#4CAF50';
-    
-    // Zastavíme skenování
-    if (quaggaInitialized) {
-        Quagga.stop();
-    }
-    
-    // Po krátké prodlevě zavřeme skener a vyhledáme
-    setTimeout(() => {
-        closeBarcodeScanner();
-        searchByBarcode(barcode);
-    }, 1000);
-}
-
-// PŘIDEJTE VALIDAČNÍ FUNKCI PRO EAN
-function validateEANChecksum(barcode) {
-    if (barcode.length !== 8 && barcode.length !== 13) {
-        console.log('Neplatná délka kódu:', barcode.length);
-        return false;
-    }
-    
-    const digits = barcode.split('').map(Number);
-    const checksumDigit = digits.pop();
-    
-    let sum = 0;
-    
-    if (barcode.length === 8) {
-        console.log('Detekován EAN-8 kód, aplikuji automatickou korekci');
-    
-    // Zkuste najít mapping
-    if (commonMisreads && commonMisreads[barcode]) {
-      barcode = commonMisreads[barcode];
-      console.log('Opraveno pomocí commonMisreads:', barcode);
-    } else {
-      // Fallback: zkuste generickou opravu
-      const corrected = attemptEAN8toEAN13Correction(barcode);
-      if (corrected) {
-        barcode = corrected;
-        console.log('Automaticky opraveno EAN-8 na EAN-13:', barcode);
-      }
-    }
-}
-
-function attemptEAN8toEAN13Correction(ean8) {
-  // Jednoduchá heuristika pro opravu EAN-8 na EAN-13
-  // Toto je příklad - upravte podle vašich potřeb
-  if (ean8.startsWith('84')) {
-    return '859' + ean8.substring(2); // Přidání prefixu 859
-  }
-  return null;
-}
-
-    const calculatedChecksum = (10 - (sum % 10)) % 10;
-    const isValid = calculatedChecksum === checksumDigit;
-    
-    if (!isValid) {
-        console.log('Checksum neplatný:', {
-            kód: barcode,
-            očekávaný: checksumDigit,
-            vypočtený: calculatedChecksum,
-            suma: sum
-        });
-    }
-    
-    return isValid;
-}
-
-// Přepnutí kamery (přední/zadní)
-async function toggleCamera() {
-    facingMode = facingMode === 'environment' ? 'user' : 'environment';
-    barcodeStatus.textContent = 'Přepínám kameru...';
-    
-    try {
-        await startCamera();
-        barcodeStatus.textContent = 'Namiřte na čárový kód';
-        
-        // Restart Quagga s novou kamerou
-        if (quaggaInitialized) {
-            Quagga.stop();
-            initQuagga();
-            startBarcodeScanning();
-        }
-    } catch (error) {
-        console.error('Chyba při přepínání kamery:', error);
-        barcodeStatus.textContent = 'Chyba: ' + error.message;
-        barcodeStatus.style.color = 'red';
-    }
-}
-
-// Přepnutí blesku (pokud je dostupný)
-async function toggleFlash() {
-    if (!stream) return;
-    
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!videoTrack) return;
-    
-    try {
-        const capabilities = videoTrack.getCapabilities();
-        if (capabilities.torch) {
-            await videoTrack.applyConstraints({
-                advanced: [{ torch: !flashEnabled }]
-            });
-            flashEnabled = !flashEnabled;
-            document.getElementById('toggleFlashButton').textContent = 
-                flashEnabled ? 'Vypnout blesk' : 'Blesk';
-        } else {
-            barcodeStatus.textContent = 'Blesk není dostupný';
-            barcodeStatus.style.color = 'orange';
-            setTimeout(() => {
-                if (barcodeModal.style.display === 'flex') {
-                    barcodeStatus.textContent = 'Namiřte na čárový kód';
-                    barcodeStatus.style.color = '#666';
-                }
-            }, 2000);
-        }
-    } catch (error) {
-        console.error('Chyba při ovládání blesku:', error);
-    }
-}
-
-// Zavření skeneru čárových kódů
-function closeBarcodeScanner() {
-    console.log('Zavírám skener...');
-    
-    // Zastavíme časový limit
-    if (detectionTimeout) {
-        clearTimeout(detectionTimeout);
-        detectionTimeout = null;
-    }
-        
-    // Zastavíme stream videa
-    if (stream) {
-        try {
-            stream.getTracks().forEach(track => {
-                track.stop();
-                console.log('Zastaven track:', track.kind);
-            });
-            stream = null;
-        } catch (error) {
-            console.error('Chyba při zastavování streamu:', error);
-        }
-    }
-    
-    // Zastavíme video
-    if (barcodeVideo) {
-        barcodeVideo.srcObject = null;
-    }
-    
-    // RESTARTUJEME QUAGGU PRO PŘÍŠTÍ POUŽITÍ
-    restartQuagga();
-    
-    // Skryjeme modální okno
-    barcodeModal.style.display = 'none';
-        
-    // Obnovíme výchozí zobrazení
-    document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
-    barcodeVideo.style.display = 'none';
-    document.getElementById('toggleCameraButton').style.display = 'none';
-    document.getElementById('toggleFlashButton').style.display = 'none';
-    barcodeOverlay.style.display = 'none';
-    
-    console.log('Skener úspěšně uzavřen');
-}
-    const detailsModal = document.getElementById('detailsModal');
-    const closeButton = detailsModal.querySelector('.close-button');
-
-// Inicializace modálních oken a jejich event listenerů
-document.addEventListener('DOMContentLoaded', function() {
-    // Kontrola existence elementů před přidáním event listenerů
-    if (!detailsModal) {
-        console.error("Details modal element not found");
-        return;
-    }
-
-    // Reference na modální okna a jejich ovládací prvky
-    const closeButton = detailsModal ? detailsModal.querySelector('.close-button') : null;  
-    const createRecipeModal = document.getElementById('createRecipeModal');
-    const selectRecipeModal = document.getElementById('selectRecipeModal');
-    const settingsModal = document.getElementById('settingsModal');
-    const barcodeModal = document.getElementById('barcodeModal');
-    
-    // Event listener pro zavírací tlačítko detailního modalu
-    if (closeButton) {
-        closeButton.addEventListener('click', () => {
-            detailsModal.style.display = 'none';
-            currentEditingRecipeId = null;
-            currentEditingIngredientIndex = null;
-        });
-    }
-
-    // Event listener pro zavírání kliknutím mimo modální okno
-    window.addEventListener('click', (event) => {
-        if (event.target == detailsModal) {
-            detailsModal.style.display = 'none';
-            currentEditingRecipeId = null;
-            currentEditingIngredientIndex = null;
-        }
-        if (event.target == settingsModal) {
-            settingsModal.style.display = 'none';
-        }
-        if (event.target == selectRecipeModal) {
-            selectRecipeModal.style.display = 'none';
-        }
-        if (event.target == barcodeModal) {
-            closeBarcodeScanner();
-        }
-    });
-
-    const createNewProfileBtn = document.getElementById('createNewProfileBtn');
-    if (createNewProfileBtn) {
-        createNewProfileBtn.addEventListener('click', () => {
-            document.getElementById('profileModal').style.display = 'none';
-            showCreateProfileModal();
-        });
-    }
-
-    const confirmCreateProfile = document.getElementById('confirmCreateProfile');
-    if (confirmCreateProfile) {
-        confirmCreateProfile.addEventListener('click', async () => {
-            const profileName = document.getElementById('newProfileName').value.trim();
-            if (profileName) {
-                const newProfileId = await createNewProfile(profileName);
-                if (newProfileId) {
-                    await selectProfile(newProfileId);
-                    document.getElementById('createProfileModal').style.display = 'none';
-                }
-            }
-        });
-    }
-
-    const cancelCreateProfile = document.getElementById('cancelCreateProfile');
-    if (cancelCreateProfile) {
-        cancelCreateProfile.addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-    }
-
-    const closeCreateProfileModal = document.getElementById('closeCreateProfileModal');
-    if (closeCreateProfileModal) {
-        closeCreateProfileModal.addEventListener('click', () => {
-            document.getElementById('createProfileModal').style.display = 'none';
-            showProfileModal();
-        });
-    }
-
-    // Event listener pro nastavovací ikonku
-    const settingsIcon = document.getElementById('settingsIcon');
-    if (settingsIcon) {
-        settingsIcon.addEventListener('click', () => {
-            settingsModal.style.display = 'flex';
-        });
-    }
-
-    // Event listener pro tlačítko zavření nastavení
-    const closeSettingsModalButton = document.getElementById('closeSettingsModal');
-    if (closeSettingsModalButton) {
-        closeSettingsModalButton.addEventListener('click', () => {
-            settingsModal.style.display = 'none';
-        });
-    }
-
-    // Event listener pro tlačítko zavření výběru receptu
-    const closeSelectRecipeModal = document.getElementById('closeSelectRecipeModal');
-    if (closeSelectRecipeModal) {
-        closeSelectRecipeModal.addEventListener('click', () => {
-            selectRecipeModal.style.display = 'none';
-        });
-    }
-
-    // Event listener pro tlačítko zavření vytváření receptu
-    document.getElementById('closeCreateRecipeModal').addEventListener('click', () => {
-        createRecipeModal.style.display = 'none';
-    });
-
-    console.log("Modální okna inicializována");
-});
-
-initializeFirebase();        
-
-// --- Logika vyhledávání potravin ---
-const searchForm = document.getElementById('searchForm');
-if (searchForm) {
-    searchForm.addEventListener('submit', async function(event) {
-        console.log('Search form submit event fired.');
-        event.preventDefault();
-
-        const query = document.getElementById('query').value;
-        const resultsDiv = document.getElementById('results');
-        const loadingDiv = document.getElementById('loading');
-        const errorDiv = document.getElementById('error-message');
-
-        resultsDiv.innerHTML = '';
-        errorDiv.innerHTML = '';
-        loadingDiv.style.display = 'block';
-        
-        // Resetujeme stav přerušení
-        isSearchInterrupted = false;
-        
-        // Zrušíme předchozí vyhledávání, pokud existuje
-        if (currentSearchController) {
-            currentSearchController.abort();
-        }
-        
-        // Vytvoříme nový AbortController pro aktuální vyhledávání
-        currentSearchController = new AbortController();
-
-        try {
-            const response = await fetch('/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `query=${encodeURIComponent(query)}`,
-                signal: currentSearchController.signal // Připojíme signal pro možnost přerušení
-            });
-
-            if (!response.ok) {
-                loadingDiv.style.display = 'none';
-                let errorData;
-                try {
-                    errorData = await response.json();
-                } catch (e) {
-                    errorData = { error: await response.text() };
-                }
-                errorDiv.textContent = `Chyba: ${errorData.error || response.statusText}`;
+            // Zkontrolujeme, zda je API dostupné
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                barcodeStatus.textContent = 'Kamera není v tomto prohlížeči dostupná';
+                barcodeStatus.style.color = 'red';
                 return;
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let buffer = '';
+            try {
+                await startCamera();
+                debugCameraStream();
+                barcodeStatus.textContent = 'Namiřte na čárový kód';
 
-            while (true) {
-                // Kontrola přerušení před dalším čtením
-                if (isSearchInterrupted) {
-                    console.log('Vyhledávání bylo přerušeno uživatelem');
-                    reader.cancel();
-                    break;
-                }
-                
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
+                // POČKÁME, NEŽ SE VIDEO NAČTE
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
+                startBarcodeScanning();
+            } catch (error) {
+                console.error('Chyba při inicializaci kamery:', error);
+                barcodeStatus.textContent = 'Chyba: ' + error.message;
+                barcodeStatus.style.color = 'red';
 
-                for (const line of lines) {
-                    if (line.trim() === '') continue;
+                // POKUS O OBNOVU QUAGGY
+                if (quaggaInitialized) {
                     try {
-                        const item = JSON.parse(line);
-                        if (item.error) {
-                            errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                            loadingDiv.style.display = 'none';
-                            return;
-                        }
-                        appendFoodItem(item);
+                        Quagga.stop();
+                        // Počkáme a zkusíme znovu
+                        setTimeout(() => {
+                            if (barcodeModal.style.display === 'flex') {
+                                startBarcodeScanning();
+                            }
+                        }, 1000);
                     } catch (e) {
-                        console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
+                        console.error('Nelze obnovit Quaggu:', e);
                     }
-                }
-            }
-            if (buffer.trim() !== '' && !isSearchInterrupted) {
-                try {
-                    const item = JSON.parse(buffer);
-                    if (item.error) {
-                        errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
-                    } else {
-                        appendFoodItem(item);
-                    }
-                } catch (e) {
-                    console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
-                }
-            }
-
-            loadingDiv.style.display = 'none';
-            if (resultsDiv.innerHTML === '' && !isSearchInterrupted) {
-                resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
-            }
-
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('Vyhledávání bylo přerušeno uživatelem');
-            } else {
-                console.error('Došlo k chybě:', error);
-                loadingDiv.style.display = 'none';
-                if (!isSearchInterrupted) {
-                    errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
                 }
             }
         }
-    });
-} else {
-    console.error('Search form element with ID "searchForm" not found.');
-}
+
+        function restartQuagga() {
+            console.log('Restartuji Quaggu...');
+
+            if (typeof Quagga !== 'undefined') {
+                try {
+                    // Zastavíme současnou instanci
+                    if (quaggaInitialized) {
+                        Quagga.stop();
+                        Quagga.offDetected();
+                        Quagga.offProcessed();
+                    }
+
+                    // Resetujeme stav
+                    quaggaInitialized = false;
+                    lastDetectedBarcode = null;
+
+                    // Počkáme chvíli
+                    setTimeout(() => {
+                        initQuagga();
+                        console.log('Quagga restartována');
+                    }, 500);
+
+                } catch (error) {
+                    console.error('Chyba při restartu Quaggy:', error);
+                }
+            }
+        }
+
+        // Spuštění kamery
+        async function startCamera() {
+            // Zastavíme existující stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: {
+                    width: { ideal: 1920, min: 1280 },
+                    height: { ideal: 1080, min: 720 },
+                    frameRate: { ideal: 60 }, // vyšší fps pro plynulejší video
+                    facingMode: facingMode,
+                }
+            };
+
+            // Pokud máme uložené deviceId, použijeme ho
+            if (currentDeviceId) {
+                constraints.video.deviceId = { exact: currentDeviceId };
+            }
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                barcodeVideo.srcObject = stream;
+                barcodeVideo.style.display = 'block';
+                document.getElementById('barcodeUnsupportedMessage').style.display = 'none';
+                document.getElementById('toggleCameraButton').style.display = 'inline-block';
+                document.getElementById('toggleFlashButton').style.display = 'inline-block';
+                barcodeOverlay.style.display = 'block';
+
+                // Explicitně nastavte velikost videa pro Quagga
+                barcodeVideo.width = 640;
+                barcodeVideo.height = 480;
+
+                // Uložíme deviceId pro příště
+                const videoTrack = stream.getVideoTracks()[0];
+                if (videoTrack) {
+                    currentDeviceId = videoTrack.getSettings().deviceId;
+                }
+
+                // Čekáme na načtení videa
+                return new Promise((resolve) => {
+                    barcodeVideo.onloadedmetadata = () => {
+                        barcodeVideo.play().then(() => {
+                            console.log('Video started playing');
+                            resolve();
+                        }).catch(error => {
+                            console.error('Error playing video:', error);
+                            resolve();
+                        });
+                    };
+
+                    // Fallback timeout
+                    setTimeout(() => resolve(), 1000);
+                });
+            } catch (error) {
+                console.error('Chyba při přístupu ke kameře:', error);
+                document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+                barcodeVideo.style.display = 'none';
+                document.getElementById('toggleCameraButton').style.display = 'none';
+                document.getElementById('toggleFlashButton').style.display = 'none';
+                barcodeOverlay.style.display = 'none';
+
+                barcodeStatus.textContent = 'Použijte ruční zadání kódu';
+                throw error;
+            }
+        }
+
+        // Spuštění skenování čárových kódů
+        function startBarcodeScanning() {
+            console.log('Spouštím skenování...');
+
+            // Zastavíme existující interval
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+
+            // Nastavíme časový limit pro skenování (20 sekund)
+            if (detectionTimeout) {
+                clearTimeout(detectionTimeout);
+            }
+            detectionTimeout = setTimeout(() => {
+                console.log('Časový limit skenování vypršel');
+                barcodeStatus.textContent = 'Časový limit vypršel - zkuste to znovu';
+                barcodeStatus.style.color = 'orange';
+                restartQuagga();
+            }, 20000);
+
+            // ZKONTROLUJEME, zda je Quagga připravena a video funguje
+            if (quaggaInitialized && barcodeVideo && barcodeVideo.srcObject) {
+                try {
+                    Quagga.start();
+                    barcodeStatus.textContent = 'Skenování spuštěno - namiřte na čárový kód';
+                    console.log('Quagga úspěšně restartována');
+                } catch (error) {
+                    console.error('Chyba při startu Quaggy:', error);
+                    // Fallback na canvas
+                    startCanvasFallback();
+                }
+            } else {
+                console.log('Quagga není inicializována nebo video nefunguje, používám fallback');
+                // Fallback: použijeme intervalové kontrolování pomocí canvasu
+                startCanvasFallback();
+            }
+        }
+
+
+        // Detekce čárových kódů pomocí canvasu (fallback)
+        function detectBarcodesWithCanvas() {
+            return new Promise((resolve) => {
+                if (!barcodeVideo.videoWidth || !barcodeVideo.videoHeight) {
+                    resolve([]);
+                    return;
+                }
+
+                const context = barcodeCanvas.getContext('2d');
+                const width = barcodeVideo.videoWidth;
+                const height = barcodeVideo.videoHeight;
+
+                // Nastavíme velikost canvasu
+                barcodeCanvas.width = width;
+                barcodeCanvas.height = height;
+
+                // Nakreslíme aktuální snímek videa na canvas
+                context.drawImage(barcodeVideo, 0, 0, width, height);
+
+                try {
+                    // Zjednodušená detekce - v reálné aplikaci byste použili knihovnu
+                    const imageData = context.getImageData(0, 0, width, height);
+                    const detectedBarcodes = detectSimpleBarcodes(imageData);
+                    resolve(detectedBarcodes);
+                } catch (error) {
+                    console.error('Chyba při detekci:', error);
+                    resolve([]);
+                }
+            });
+        }
+
+        // Jednoduchá detekce čárových kódů (vylepšená)
+        function detectSimpleBarcodes(imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            const barcodes = [];
+
+            // Projedeme pouze středovou oblast (30% výšky)
+            const startY = Math.floor(height * 0.35);
+            const endY = Math.floor(height * 0.65);
+
+            for (let y = startY; y <= endY; y += Math.floor(height * 0.05)) {
+                let inBar = false;
+                let barStart = 0;
+                let bars = [];
+                let barCount = 0;
+
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+
+                    const brightness = (r + g + b) / 3;
+                    const isDark = brightness < 80; // Přísnější threshold
+
+                    if (isDark && !inBar) {
+                        inBar = true;
+                        barStart = x;
+                        barCount++;
+                    } else if (!isDark && inBar) {
+                        inBar = false;
+                        const barWidth = x - barStart;
+
+                        // Filtrujeme příliš široké/úzké pruhy
+                        if (barWidth > 2 && barWidth < 50) {
+                            bars.push({ start: barStart, end: x, width: barWidth });
+                        }
+                    }
+                }
+
+                // EAN kód má obvykle 30-60 pruhů
+                if (bars.length > 25 && bars.length < 65) {
+                    console.log('Nalezen potenciální čárový kód s', bars.length, 'pruhy');
+
+                    // Zkusíme extrahovat numerickou hodnotu
+                    const numericPattern = extractNumericPattern(bars);
+                    if (numericPattern && numericPattern.length >= 8) {
+                        barcodes.push(numericPattern);
+                        break; // Našli jsme platný kód, přestaneme hledat
+                    }
+                }
+            }
+
+            return barcodes;
+        }
+
+        function extractNumericPattern(bars) {
+            // Jednoduchá heuristika - v reálné aplikaci by bylo potřeba proper dekódování
+            const widths = bars.map(bar => bar.width);
+            const avgWidth = widths.reduce((a, b) => a + b, 0) / widths.length;
+
+            // Binární reprezentace podle šířky pruhů
+            let binary = '';
+            for (const bar of bars) {
+                binary += bar.width > avgWidth ? '1' : '0';
+            }
+
+            // Zkusíme najít něco, co vypadá jako EAN (13 nebo 8 číslic)
+            if (binary.length >= 95) { // EAN-13 má cca 95 modulů
+                return 'PRAVDĚPODOBNY_EAN_13';
+            } else if (binary.length >= 67) { // EAN-8 má cca 67 modulů
+                return 'PRAVDĚPODOBNY_EAN_8';
+            }
+
+            return null;
+        }
+
+
+
+        // Přidejte tuto funkci do svého kódu (nejlépe nad handleBarcodeDetected)
+        function isValidEAN(barcode) {
+            // Kontrola délky EAN (8 nebo 13 číslic)
+            if (!/^\d{8}$|^\d{13}$/.test(barcode)) {
+                return false;
+            }
+
+            // Kontrola checksumu pomocí existující funkce validateEANChecksum
+            return validateEANChecksum(barcode);
+        }
+
+        let lastDetectedBarcode = null;
+        let detectionTimeout = null;
+
+        // Zpracování nalezeného čárového kódu
+        function handleBarcodeDetected(barcode, quaggaResult) {
+            if (lastDetectedBarcode === barcode) {
+                console.log('Ignoruji opakovanou detekci stejného kódu:', barcode);
+                return;
+            }
+
+            console.log('Nalezen čárový kód:', barcode);
+            console.log('Raw pattern:', quaggaResult.pattern);
+            console.log('Pattern length:', quaggaResult.pattern.length);
+            console.log('Bounding box:', quaggaResult.box);
+            // Upravte handleBarcodeDetected - přidejte před validací:
+            if (commonMisreads[barcode]) {
+                console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
+                barcode = commonMisreads[barcode];
+            }
+
+            // Validace formátu a checksumu
+            const isValid = isValidEAN(barcode);
+            //const patternAnalysis = analyzePattern(result.pattern);
+            //console.log('Pattern analysis:', patternAnalysis);
+
+            if (!isValid) {
+                console.log('Neplatný formát nebo checksum kódu:', barcode);
+                barcodeStatus.textContent = `Neplatný kód: ${barcode}`;
+                barcodeStatus.style.color = 'orange';
+                return;
+            }
+
+            // Pokud vše projde, uložíme a zpracujeme kód
+            lastDetectedBarcode = barcode;
+            barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+            barcodeStatus.style.color = '#4CAF50';
+
+            // Vizuální feedback
+            barcodeOverlay.classList.add('barcode-found');
+
+            // Zastavíme skenování
+            if (quaggaInitialized) {
+                Quagga.stop();
+            }
+
+            // Po krátké prodlevě zavřeme skener a vyhledáme
+            setTimeout(() => {
+                closeBarcodeScanner();
+                searchByBarcode(barcode);
+            }, 1000);
+
+            // Odstraníme animaci po dokončení
+            setTimeout(() => {
+                barcodeOverlay.classList.remove('barcode-found');
+            }, 1500);
+
+            // Přidejte do handleBarcodeDetected
+            if (barcode === '12526048' && expectedCode === '8595229926818') {
+                console.log('Opravuji detekovaný kód na správný');
+                barcode = '8595229926818'; // MANUÁLNÍ OPRAVA
+            }
+
+
+            if (commonMisreads[barcode]) {
+                console.log('Opravuji častou chybu detekce:', barcode, '→', commonMisreads[barcode]);
+                barcode = commonMisreads[barcode];
+            }
+
+            if (!isValidEAN && !isValidUPC) {
+                console.log('Ignoruji neplatný formát kódu:', barcode);
+                return;
+            }
+
+            // DODATEČNÁ KONTROLA - EAN checksum validation
+            if (!validateEANChecksum(barcode)) {
+                console.log('Neplatný checksum pro kód:', barcode);
+                return;
+            }
+
+            // Vizuální feedback
+            barcodeOverlay.classList.add('barcode-found');
+            barcodeStatus.textContent = `Nalezen kód: ${barcode}`;
+            barcodeStatus.style.color = '#4CAF50';
+
+            // Zastavíme skenování
+            if (quaggaInitialized) {
+                Quagga.stop();
+            }
+
+            // Po krátké prodlevě zavřeme skener a vyhledáme
+            setTimeout(() => {
+                closeBarcodeScanner();
+                searchByBarcode(barcode);
+            }, 1000);
+        }
+
+        // PŘIDEJTE VALIDAČNÍ FUNKCI PRO EAN
+        function validateEANChecksum(barcode) {
+            if (barcode.length !== 8 && barcode.length !== 13) {
+                console.log('Neplatná délka kódu:', barcode.length);
+                return false;
+            }
+
+            const digits = barcode.split('').map(Number);
+            const checksumDigit = digits.pop();
+
+            let sum = 0;
+
+            if (barcode.length === 8) {
+                console.log('Detekován EAN-8 kód, aplikuji automatickou korekci');
+
+                // Zkuste najít mapping
+                if (commonMisreads && commonMisreads[barcode]) {
+                    barcode = commonMisreads[barcode];
+                    console.log('Opraveno pomocí commonMisreads:', barcode);
+                } else {
+                    // Fallback: zkuste generickou opravu
+                    const corrected = attemptEAN8toEAN13Correction(barcode);
+                    if (corrected) {
+                        barcode = corrected;
+                        console.log('Automaticky opraveno EAN-8 na EAN-13:', barcode);
+                    }
+                }
+            }
+
+            function attemptEAN8toEAN13Correction(ean8) {
+                // Jednoduchá heuristika pro opravu EAN-8 na EAN-13
+                // Toto je příklad - upravte podle vašich potřeb
+                if (ean8.startsWith('84')) {
+                    return '859' + ean8.substring(2); // Přidání prefixu 859
+                }
+                return null;
+            }
+
+            const calculatedChecksum = (10 - (sum % 10)) % 10;
+            const isValid = calculatedChecksum === checksumDigit;
+
+            if (!isValid) {
+                console.log('Checksum neplatný:', {
+                    kód: barcode,
+                    očekávaný: checksumDigit,
+                    vypočtený: calculatedChecksum,
+                    suma: sum
+                });
+            }
+
+            return isValid;
+        }
+
+        // Přepnutí kamery (přední/zadní)
+        async function toggleCamera() {
+            facingMode = facingMode === 'environment' ? 'user' : 'environment';
+            barcodeStatus.textContent = 'Přepínám kameru...';
+
+            try {
+                await startCamera();
+                barcodeStatus.textContent = 'Namiřte na čárový kód';
+
+                // Restart Quagga s novou kamerou
+                if (quaggaInitialized) {
+                    Quagga.stop();
+                    initQuagga();
+                    startBarcodeScanning();
+                }
+            } catch (error) {
+                console.error('Chyba při přepínání kamery:', error);
+                barcodeStatus.textContent = 'Chyba: ' + error.message;
+                barcodeStatus.style.color = 'red';
+            }
+        }
+
+        // Přepnutí blesku (pokud je dostupný)
+        async function toggleFlash() {
+            if (!stream) return;
+
+            const videoTrack = stream.getVideoTracks()[0];
+            if (!videoTrack) return;
+
+            try {
+                const capabilities = videoTrack.getCapabilities();
+                if (capabilities.torch) {
+                    await videoTrack.applyConstraints({
+                        advanced: [{ torch: !flashEnabled }]
+                    });
+                    flashEnabled = !flashEnabled;
+                    document.getElementById('toggleFlashButton').textContent =
+                        flashEnabled ? 'Vypnout blesk' : 'Blesk';
+                } else {
+                    barcodeStatus.textContent = 'Blesk není dostupný';
+                    barcodeStatus.style.color = 'orange';
+                    setTimeout(() => {
+                        if (barcodeModal.style.display === 'flex') {
+                            barcodeStatus.textContent = 'Namiřte na čárový kód';
+                            barcodeStatus.style.color = '#666';
+                        }
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Chyba při ovládání blesku:', error);
+            }
+        }
+
+        // Zavření skeneru čárových kódů
+        function closeBarcodeScanner() {
+            console.log('Zavírám skener...');
+
+            // Zastavíme časový limit
+            if (detectionTimeout) {
+                clearTimeout(detectionTimeout);
+                detectionTimeout = null;
+            }
+
+            // Zastavíme stream videa
+            if (stream) {
+                try {
+                    stream.getTracks().forEach(track => {
+                        track.stop();
+                        console.log('Zastaven track:', track.kind);
+                    });
+                    stream = null;
+                } catch (error) {
+                    console.error('Chyba při zastavování streamu:', error);
+                }
+            }
+
+            // Zastavíme video
+            if (barcodeVideo) {
+                barcodeVideo.srcObject = null;
+            }
+
+            // RESTARTUJEME QUAGGU PRO PŘÍŠTÍ POUŽITÍ
+            restartQuagga();
+
+            // Skryjeme modální okno
+            barcodeModal.style.display = 'none';
+
+            // Obnovíme výchozí zobrazení
+            document.getElementById('barcodeUnsupportedMessage').style.display = 'block';
+            barcodeVideo.style.display = 'none';
+            document.getElementById('toggleCameraButton').style.display = 'none';
+            document.getElementById('toggleFlashButton').style.display = 'none';
+            barcodeOverlay.style.display = 'none';
+
+            console.log('Skener úspěšně uzavřen');
+        }
+        const detailsModal = document.getElementById('detailsModal');
+        const closeButton = detailsModal.querySelector('.close-button');
+
+        // Inicializace modálních oken a jejich event listenerů
+        document.addEventListener('DOMContentLoaded', function () {
+            // Kontrola existence elementů před přidáním event listenerů
+            if (!detailsModal) {
+                console.error("Details modal element not found");
+                return;
+            }
+
+            // Reference na modální okna a jejich ovládací prvky
+            const closeButton = detailsModal ? detailsModal.querySelector('.close-button') : null;
+            const createRecipeModal = document.getElementById('createRecipeModal');
+            const selectRecipeModal = document.getElementById('selectRecipeModal');
+            const settingsModal = document.getElementById('settingsModal');
+            const barcodeModal = document.getElementById('barcodeModal');
+
+            // Event listener pro zavírací tlačítko detailního modalu
+            if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                    detailsModal.style.display = 'none';
+                    currentEditingRecipeId = null;
+                    currentEditingIngredientIndex = null;
+                });
+            }
+
+            // Event listener pro zavírání kliknutím mimo modální okno
+            window.addEventListener('click', (event) => {
+                if (event.target == detailsModal) {
+                    detailsModal.style.display = 'none';
+                    currentEditingRecipeId = null;
+                    currentEditingIngredientIndex = null;
+                }
+                if (event.target == settingsModal) {
+                    settingsModal.style.display = 'none';
+                }
+                if (event.target == selectRecipeModal) {
+                    selectRecipeModal.style.display = 'none';
+                }
+                if (event.target == barcodeModal) {
+                    closeBarcodeScanner();
+                }
+            });
+
+            const createNewProfileBtn = document.getElementById('createNewProfileBtn');
+            if (createNewProfileBtn) {
+                createNewProfileBtn.addEventListener('click', () => {
+                    document.getElementById('profileModal').style.display = 'none';
+                    showCreateProfileModal();
+                });
+            }
+
+            const confirmCreateProfile = document.getElementById('confirmCreateProfile');
+            if (confirmCreateProfile) {
+                confirmCreateProfile.addEventListener('click', async () => {
+                    const profileName = document.getElementById('newProfileName').value.trim();
+                    if (profileName) {
+                        const newProfileId = await createNewProfile(profileName);
+                        if (newProfileId) {
+                            await selectProfile(newProfileId);
+                            document.getElementById('createProfileModal').style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            const cancelCreateProfile = document.getElementById('cancelCreateProfile');
+            if (cancelCreateProfile) {
+                cancelCreateProfile.addEventListener('click', () => {
+                    document.getElementById('createProfileModal').style.display = 'none';
+                    showProfileModal();
+                });
+            }
+
+            const closeCreateProfileModal = document.getElementById('closeCreateProfileModal');
+            if (closeCreateProfileModal) {
+                closeCreateProfileModal.addEventListener('click', () => {
+                    document.getElementById('createProfileModal').style.display = 'none';
+                    showProfileModal();
+                });
+            }
+
+            // Event listener pro nastavovací ikonku
+            const settingsIcon = document.getElementById('settingsIcon');
+            if (settingsIcon) {
+                settingsIcon.addEventListener('click', () => {
+                    settingsModal.style.display = 'flex';
+                });
+            }
+
+            // Event listener pro tlačítko zavření nastavení
+            const closeSettingsModalButton = document.getElementById('closeSettingsModal');
+            if (closeSettingsModalButton) {
+                closeSettingsModalButton.addEventListener('click', () => {
+                    settingsModal.style.display = 'none';
+                });
+            }
+
+            // Event listener pro tlačítko zavření výběru receptu
+            const closeSelectRecipeModal = document.getElementById('closeSelectRecipeModal');
+            if (closeSelectRecipeModal) {
+                closeSelectRecipeModal.addEventListener('click', () => {
+                    selectRecipeModal.style.display = 'none';
+                });
+            }
+
+            // Event listener pro tlačítko zavření vytváření receptu
+            document.getElementById('closeCreateRecipeModal').addEventListener('click', () => {
+                createRecipeModal.style.display = 'none';
+            });
+
+            console.log("Modální okna inicializována");
+        });
+
+        initializeFirebase();
+
+        // --- Logika vyhledávání potravin ---
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', async function (event) {
+                console.log('Search form submit event fired.');
+                event.preventDefault();
+
+                const query = document.getElementById('query').value;
+                const resultsDiv = document.getElementById('results');
+                const loadingDiv = document.getElementById('loading');
+                const errorDiv = document.getElementById('error-message');
+
+                resultsDiv.innerHTML = '';
+                errorDiv.innerHTML = '';
+                loadingDiv.style.display = 'block';
+
+                // Resetujeme stav přerušení
+                isSearchInterrupted = false;
+
+                // Zrušíme předchozí vyhledávání, pokud existuje
+                if (currentSearchController) {
+                    currentSearchController.abort();
+                }
+
+                // Vytvoříme nový AbortController pro aktuální vyhledávání
+                currentSearchController = new AbortController();
+
+                try {
+                    const response = await fetch('/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `query=${encodeURIComponent(query)}`,
+                        signal: currentSearchController.signal // Připojíme signal pro možnost přerušení
+                    });
+
+                    if (!response.ok) {
+                        loadingDiv.style.display = 'none';
+                        let errorData;
+                        try {
+                            errorData = await response.json();
+                        } catch (e) {
+                            errorData = { error: await response.text() };
+                        }
+                        errorDiv.textContent = `Chyba: ${errorData.error || response.statusText}`;
+                        return;
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+
+                    while (true) {
+                        // Kontrola přerušení před dalším čtením
+                        if (isSearchInterrupted) {
+                            console.log('Vyhledávání bylo přerušeno uživatelem');
+                            reader.cancel();
+                            break;
+                        }
+
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            break;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            try {
+                                const item = JSON.parse(line);
+                                if (item.error) {
+                                    errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                                    loadingDiv.style.display = 'none';
+                                    return;
+                                }
+                                appendFoodItem(item);
+                            } catch (e) {
+                                console.error('Chyba při parsování JSON řádku:', e, 'Řádek:', line);
+                            }
+                        }
+                    }
+                    if (buffer.trim() !== '' && !isSearchInterrupted) {
+                        try {
+                            const item = JSON.parse(buffer);
+                            if (item.error) {
+                                errorDiv.textContent = `Chyba ze serveru: ${item.error}`;
+                            } else {
+                                appendFoodItem(item);
+                            }
+                        } catch (e) {
+                            console.error('Chyba při parsování zbytku JSON bufferu:', e, 'Buffer:', buffer);
+                        }
+                    }
+
+                    loadingDiv.style.display = 'none';
+                    if (resultsDiv.innerHTML === '' && !isSearchInterrupted) {
+                        resultsDiv.innerHTML = '<p>Nic nenalezeno.</p>';
+                    }
+
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('Vyhledávání bylo přerušeno uživatelem');
+                    } else {
+                        console.error('Došlo k chybě:', error);
+                        loadingDiv.style.display = 'none';
+                        if (!isSearchInterrupted) {
+                            errorDiv.textContent = 'Došlo k chybě při komunikaci se serverem.';
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error('Search form element with ID "searchForm" not found.');
+        }
 
         function appendFoodItem(item) {
             // Filter out recipes - only show 'potravina'
@@ -2772,10 +2794,10 @@ if (searchForm) {
             `;
             foodItemDiv.innerHTML = itemContent;
             resultsDiv.appendChild(foodItemDiv);
-            
+
 
             // --- Logika modálního okna pro detaily potravin ---
-            
+
             const modalDetailsContent = document.getElementById('modalDetailsContent');
 
             // References to new modals
@@ -3116,11 +3138,11 @@ if (searchForm) {
                     if (addToRecipeButton) {
                         addToRecipeButton.addEventListener('click', async (e) => {
                             e.stopPropagation();
-        
+
                             if (!checkInitialization()) {
                                 return;
                             }
-        
+
                             console.log('Přidat do receptu clicked for:', name);
                             await loadUserRecipes(true);
                             detailsModal.style.display = 'none';
@@ -3131,11 +3153,11 @@ if (searchForm) {
                     if (createAndAddRecipeButton) {
                         createAndAddRecipeButton.addEventListener('click', (e) => {
                             e.stopPropagation();
-        
+
                             if (!checkInitialization()) {
                                 return;
                             }
-        
+
                             console.log('Vytvořit recept a přidat clicked for:', name);
                             detailsModal.style.display = 'none';
                             createRecipeModal.style.display = 'flex';
@@ -3210,8 +3232,9 @@ if (searchForm) {
         }
 
     </script>
-    
+
     <!-- Load QuaggaJS for barcode scanning -->
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 </body>
+
 </html>
