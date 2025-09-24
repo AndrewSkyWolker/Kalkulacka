@@ -103,39 +103,38 @@
             <div class="create-profile-buttons">
                 <button id="confirmCreateProfile">Vytvořit</button>
                 <button id="cancelCreateProfile">Zrušit</button>
-                
+
             </div>
         </div>
     </div>
 
-    <!-- Modální okno pro detaily potravin a receptů (adaptováno) -->
+    <!-- Modální okno pro detaily receptu -->
     <div id="detailsModal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
+        <div class="modal-content modal-recipe-content"> <!-- Přidat třídu -->
+            <span class="close-button">&times;</span> <!-- Křížek ZŮSTÁVÁ zde -->
 
-            <!-- Přidáme speciální třídu pouze pro recepty -->
-            <div id="modalDetailsContent" class="modal-details modal-recipe-container">
-                <!-- Fixní hlavička receptu -->
-                <div class="modal-recipe-header">
-                    <img id="modalHeaderImage" src="{{ url_for('static', filename='icon/recepty.png') }}" alt=""
-                        class="modal-header-image">
-                    <div class="modal-header-text">
-                        <div id="modalHeaderName" class="modal-header-name">Název receptu</div>
-                        <div class="energy-display-group">
-                            <div id="totalKcalDisplay" class="energy-header">0 kcal</div>
-                            <div id="totalKjDisplay" class="energy-sub-header">0 kJ</div>
+            <div class="modal-recipe-scroll-container"> <!-- Nový kontejner pro scroll -->
+                <div id="modalDetailsContent" class="modal-details modal-recipe-container">
+                    <!-- Fixní hlavička receptu -->
+                    <div class="modal-recipe-header">
+                        <img id="modalHeaderImage" src="" alt="" class="modal-header-image">
+                        <div class="modal-header-text">
+                            <div id="modalHeaderName" class="modal-header-name">Název receptu</div>
+                            <div class="energy-display-group">
+                                <div id="totalKcalDisplay" class="energy-header">0 kcal</div>
+                                <div id="totalKjDisplay" class="energy-sub-header">0 kJ</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Hlavní obsah s scrollováním -->
-                <div class="modal-scrollable-container">
-                    <div id="nutrientDetailsSection"></div>
-                    <h3 class="ingredients-title">Složení receptu:</h3>
-                    <div id="recipeIngredientsList"></div>
+                    <!-- Hlavní obsah s scrollováním -->
+                    <div class="modal-scrollable-container">
+                        <div id="nutrientDetailsSection"></div>
+                        <h3 class="ingredients-title">Složení receptu:</h3>
+                        <div id="recipeIngredientsList"></div>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -389,6 +388,12 @@
                 });
             }
         });
+
+        function closeModal() {
+            const modal = document.getElementById('detailsModal');
+            modal.style.display = 'none';
+            modal.classList.remove('modal-recipe-open'); // Vždy odstranit při zavření
+        }
 
         // Funkce pro zobrazení aktuálního profilu
         function updateCurrentProfileDisplay(profileName) {
@@ -1559,6 +1564,7 @@
             console.log("showRecipeDetailsModal called for recipe ID:", recipeId, "name:", recipeName);
             modalDetailsContent.classList.add('modal-recipe-container');
             document.getElementById('modalDetailsContent').classList.add('modal-recipe-container');
+            document.getElementById('detailsModal').classList.add('modal-recipe-open');
             detailsModal.style.display = 'flex';
             modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily receptu "${recipeName}"...</p>`;
             if (!db || !userId || !currentProfileId) {
@@ -2983,6 +2989,7 @@
             console.log("showDetailsModal called for slug:", slug, "name:", name, "foodType:", foodType, "isEditingRecipeIngredient:", isEditingRecipeIngredient);
             modalDetailsContent.classList.remove('modal-recipe-container'); // Odebere třídu pro potraviny
             document.getElementById('modalDetailsContent').classList.remove('modal-recipe-container');
+            document.getElementById('detailsModal').classList.remove('modal-recipe-open');
             detailsModal.style.display = 'flex'; // Ensure modal is visible
             modalDetailsContent.innerHTML = `<p class="loading-details">Načítám detaily pro ${name}...</p>`;
 
